@@ -6,6 +6,7 @@ import ExpertDetailPage from "./pages/ExpertDetailPage.tsx";
 import PaymentPage from "./pages/PaymentPage.tsx";
 import MindPointsPage from "./pages/MindPointsPage.tsx";
 import BlogPage from "./pages/BlogPage.tsx";
+import BlogDetailPage from "./pages/BlogDetailPage.tsx";
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
         <Route path="/thanh-toan" element={<PaymentPage />} />
         <Route path="/mindpoints" element={<MindPointsPage />} />
         <Route path="/blog" element={<BlogPage />} />
+        <Route path="/blog/:id" element={<BlogDetailPage />} />
         <Route
           path="*"
           element={<div className="py-10 text-center">404 Not Found</div>}

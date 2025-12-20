@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { BLOG_POSTS } from "../services/blog";
 import type { BlogCategory, BlogPost } from "../types/blog";
 
@@ -84,19 +85,21 @@ function Chip({
 function PostCard({ post }: { post: BlogPost }) {
   return (
     <article className="overflow-hidden rounded-3xl bg-white shadow-[0_10px_30px_rgba(27,73,101,0.12)] ring-1 ring-[color:var(--innovation-sky)]/30">
-      <div className="relative aspect-[16/9] bg-[color:var(--calm-background)]">
-        <img
-          src={post.imageUrl}
-          alt={post.title}
-          className="h-full w-full object-cover"
-          loading="lazy"
-        />
-        <div className="absolute left-4 top-4">
-          <span className="rounded-full bg-white/90 px-3 py-1 text-[11px] font-extrabold text-[color:var(--corporate-blue)] ring-1 ring-black/5">
-            {post.category}
-          </span>
+      <Link to={`/blog/${post.id}`} className="block">
+        <div className="relative aspect-[16/9] bg-[color:var(--calm-background)]">
+          <img
+            src={post.imageUrl}
+            alt={post.title}
+            className="h-full w-full object-cover"
+            loading="lazy"
+          />
+          <div className="absolute left-4 top-4">
+            <span className="rounded-full bg-white/90 px-3 py-1 text-[11px] font-extrabold text-[color:var(--corporate-blue)] ring-1 ring-black/5">
+              {post.category}
+            </span>
+          </div>
         </div>
-      </div>
+      </Link>
 
       <div className="p-5">
         <div className="flex items-center gap-4 text-[11px] font-semibold text-black/45">
@@ -155,13 +158,13 @@ function PostCard({ post }: { post: BlogPost }) {
             </div>
           </div>
 
-          <button
-            type="button"
+          <Link
+            to={`/blog/${post.id}`}
             className="inline-flex items-center justify-center rounded-full bg-[color:var(--calm-background)] px-3 py-2 text-[12px] font-extrabold text-[color:var(--corporate-blue)] ring-1 ring-black/5 hover:bg-black/5"
             aria-label="Xem chi tiết"
           >
             →
-          </button>
+          </Link>
         </div>
       </div>
     </article>
