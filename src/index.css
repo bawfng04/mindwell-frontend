@@ -6,3 +6,14 @@ body, html {
     padding: 0;
     font-family: Arial, sans-serif;
 }
+
+/* app default color */
+
+:root{
+    --corporate-blue: #1B4965;
+    --trust-blue: #4682B4;
+    --innovation-sky: #89CFF0;
+    --calm-background: #F5FBFF;
+    --pure-white: #FFFFFF;
+    --gradient-system: linear-gradient(90deg, #1B4965 0%, #4682B4 50%, #89CFF0 100%);
+}
