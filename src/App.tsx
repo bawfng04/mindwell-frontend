@@ -2,6 +2,7 @@ import { Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout.tsx";
 import Home from "./pages/Homepage.tsx";
 import ExpertsPage from "./pages/ExpertsPage.tsx";
+import ExpertDetailPage from "./pages/ExpertDetailPage.tsx";
 
 function App() {
   return (
@@ -9,6 +10,7 @@ function App() {
       <Route element={<Layout />}>
         <Route path="/" element={<Home />} />
         <Route path="/chuyen-gia" element={<ExpertsPage />} />
+        <Route path="/chuyen-gia/:id" element={<ExpertDetailPage />} />
         <Route
           path="*"
           element={<div className="py-10 text-center">404 Not Found</div>}

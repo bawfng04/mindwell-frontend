@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { EXPERTS } from "../services/experts";
+import { Link } from "react-router-dom";
 import type { Expert, ExpertGender } from "../types/expert";
 
 type PriceFilter = "Tất cả" | "<= 250k" | "250k - 300k" | ">= 300k";
@@ -139,19 +140,20 @@ function ExpertCard({ expert }: { expert: Expert }) {
         </div>
 
         <div className="mt-4 flex gap-3">
-          <button
-            type="button"
-            className="flex-1 rounded-full border border-[color:var(--innovation-sky)]/60 bg-white px-4 py-2 text-[12px] font-semibold text-[color:var(--corporate-blue)] hover:bg-black/5"
+          <Link
+            to={`/chuyen-gia/${expert.id}`}
+            className="flex-1 rounded-full border border-[color:var(--innovation-sky)]/60 bg-white px-4 py-2 text-center text-[12px] font-semibold text-[color:var(--corporate-blue)] hover:bg-black/5"
           >
             Xem hồ sơ
-          </button>
-          <button
-            type="button"
+          </Link>
+
+          <Link
+            to={`/chuyen-gia/${expert.id}`}
             className="inline-flex items-center justify-center gap-2 rounded-full bg-[color:var(--trust-blue)] px-4 py-2 text-[12px] font-semibold text-white hover:brightness-95 active:brightness-90"
           >
             <CalendarIcon />
             Đặt lịch
-          </button>
+          </Link>
         </div>
       </div>
     </article>
