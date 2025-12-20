@@ -1,13 +1,19 @@
 import { Routes, Route } from "react-router-dom";
-import Home from "./pages/Homepage.tsx";
+import Header from "./components/Header";
+import Home from "./pages/Homepage";
 
-function App() {
+export default function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="*" element={<div>404 Not Found</div>} />
-    </Routes>
+    <div className="min-h-screen bg-[color:var(--pure-white)]">
+      <Header />
+
+      <main className="mx-auto max-w-6xl px-4 py-6">
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="*" element={<div>Page Not Found</div>} />
+        </Routes>
+      </main>
+    </div>
   );
 }
 
-export default App;
