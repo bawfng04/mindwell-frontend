@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import kh from "../assets/kh.png";
 
 type PointsPack = { points: number; priceVnd: number; tag?: string };
 type PlanKey = "free" | "premium" | "platinum";
@@ -418,7 +419,7 @@ export default function MindPointsPage() {
       {/* Bottom banner */}
       <div className="rounded-3xl bg-[color:var(--trust-blue)]/80 px-6 py-5 text-center text-white shadow-[0_20px_60px_rgba(27,73,101,0.22)] ring-1 ring-white/15">
         <div className="text-[12px] font-extrabold">
-          ⚡ Kết hợp cả hai để tối ưu chi phí
+          🤝 Kết hợp cả hai để tối ưu chi phí
         </div>
         <div className="mt-2 text-[12px] font-semibold text-white/85">
           MindPoints + Đăng ký Premium/Platinum = Giảm giá tự động cho mọi buổi
