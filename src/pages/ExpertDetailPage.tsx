@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import { EXPERTS } from "../services/experts";
 import type { Expert } from "../types/expert";
 
@@ -77,6 +77,7 @@ function Avatar({ expert }: { expert: Expert }) {
 }
 
 function CalendarBookingCard({ expert }: { expert: Expert }) {
+  const navigate = useNavigate();
   const [monthCursor, setMonthCursor] = useState(() =>
     startOfMonth(new Date())
   );
@@ -223,6 +224,21 @@ function CalendarBookingCard({ expert }: { expert: Expert }) {
         <button
           type="button"
           disabled={!selectedSlot}
+          onClick={() => {
+            if (!selectedSlot) return;
+            const yyyy = selectedDate.getFullYear();
+            const mm = String(selectedDate.getMonth() + 1).padStart(2, "0");
+            const dd = String(selectedDate.getDate()).padStart(2, "0");
+            const dateIso = `${yyyy}-${mm}-${dd}`;
+
+            const qs = new URLSearchParams({
+              expertId: expert.id,
+              date: dateIso,
+              slot: selectedSlot,
+            });
+
+            navigate(`/thanh-toan?${qs.toString()}`);
+          }}
           className={[
             "mt-4 w-full rounded-xl px-4 py-3 text-[12px] font-bold shadow-sm transition-opacity",
             selectedSlot
