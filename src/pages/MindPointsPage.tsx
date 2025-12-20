@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import kh from "../assets/kh.png";
+// import kh from "../assets/kh.png";
 
 type PointsPack = { points: number; priceVnd: number; tag?: string };
 type PlanKey = "free" | "premium" | "platinum";
