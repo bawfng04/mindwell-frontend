@@ -197,3 +197,24 @@ export type BlogPostDetailDto = {
   author: BlogAuthorDto;
   categories: BlogCategoryDto[];
 };
+
+export type AppointmentDto = {
+  apptId: number;
+  expertId: number;
+  expertName: string;
+  expertTitle: string;
+  startTime: string; // ISO
+  endTime: string; // ISO
+  status: string;
+
+  serviceType?: string | null;
+  platformId?: number | null;
+  platformName?: string | null;
+
+  totalAmountPoints?: number | null;
+
+  paymentId?: number | null;
+  paymentStatus?: string | null;
+
+  meetingJoinUrl?: string | null;
+};

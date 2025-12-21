@@ -171,6 +171,15 @@ export default function Header() {
           </NavLink>
 
           <NavLink
+            to="/lich-hen"
+            className={({ isActive }) =>
+              `${navLinkBase} ${isActive ? navLinkActive : navLinkInactive}`
+            }
+          >
+            Lịch hẹn
+          </NavLink>
+
+          <NavLink
             to="/mindpoints"
             className={({ isActive }) =>
               `${navLinkBase} ${isActive ? navLinkActive : navLinkInactive}`

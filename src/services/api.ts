@@ -21,6 +21,7 @@ import type {
   BlogCategoryDto,
   BlogPostDetailDto,
   BlogPostListItemDto,
+  AppointmentDto,
 } from "../types/api";
 
 export const api = {

@@ -10,6 +10,7 @@ import BlogDetailPage from "./pages/BlogDetailPage.tsx";
 import SignupPage from "./pages/SignupPage.tsx";
 import LoginPage from "./pages/LoginPage.tsx";
 import NotFound from "./components/NotFound.tsx";
+import AppointmentsPage from "./pages/AppointmentsPage.tsx";
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
         <Route path="/mindpoints" element={<MindPointsPage />} />
         <Route path="/blog" element={<BlogPage />} />
         <Route path="/blog/:id" element={<BlogDetailPage />} />
+        <Route path="/lich-hen" element={<AppointmentsPage />} />
         <Route path="/dang-ky" element={<SignupPage />} />
         <Route path="/dang-nhap" element={<LoginPage />} />
         <Route path="*" element={<NotFound />} />
