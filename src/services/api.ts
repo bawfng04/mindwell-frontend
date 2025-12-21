@@ -18,6 +18,9 @@ import type {
   PageResponse,
   ExpertCardDto,
   RegisterRequestDto,
+  BlogCategoryDto,
+  BlogPostDetailDto,
+  BlogPostListItemDto,
 } from "../types/api";
 
 export const api = {
@@ -190,6 +193,56 @@ export const api = {
     mockRedirect(paymentId: number) {
       // Dev-only endpoint: opens redirect URL
       return buildUrl(`/api/v1/payments/${paymentId}/mock/redirect`);
+    },
+  },
+
+  blog: {
+    listCategories(opts?: { signal?: AbortSignal }) {
+      return httpJson<BlogCategoryDto[]>(buildUrl("/api/v1/blog/categories"), {
+        signal: opts?.signal,
+      });
+    },
+
+    listPosts(
+      query?: {
+        q?: string;
+        categoryId?: number;
+        page?: number;
+        size?: number;
+        sort?: string[];
+      },
+      opts?: { signal?: AbortSignal }
+    ) {
+      return httpJson<PageResponse<BlogPostListItemDto>>(
+        buildUrl("/api/v1/blog/posts", {
+          q: query?.q,
+          categoryId: query?.categoryId,
+          page: query?.page ?? 0,
+          size: query?.size ?? 9,
+          sort: query?.sort,
+        }),
+        { signal: opts?.signal }
+      );
+    },
+
+    getPostDetail(postId: number, opts?: { signal?: AbortSignal }) {
+      return httpJson<BlogPostDetailDto>(
+        buildUrl(`/api/v1/blog/posts/${postId}`),
+        { signal: opts?.signal }
+      );
+    },
+
+    listRelated(
+      postId: number,
+      query?: { limit?: number },
+      opts?: { signal?: AbortSignal }
+    ) {
+      return httpJson<BlogPostListItemDto[]>(
+        buildUrl(`/api/v1/blog/posts/${postId}/related`, {
+          limit: query?.limit ?? 3,
+        }),
+        { signal: opts?.signal }
+      );
     },
   },
 };

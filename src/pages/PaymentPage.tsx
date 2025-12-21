@@ -7,11 +7,17 @@ import type {
   InitiateAppointmentPaymentRequestDto,
 } from "../types/api";
 
-// --- HELPERS & UI COMPONENTS ---
+function isAbortError(e: unknown) {
+  return (
+    (typeof e === "object" &&
+      e !== null &&
+      "name" in e &&
+      (e as any).name === "AbortError") ||
+    false
+  );
+}
 
 function formatCurrency(value: number) {
-  // Logic hiển thị: Nếu là Point thì hiện Point, VND thì hiện đ
-  // Ở đây giả sử API trả về Point, nhưng UI format đẹp
   return new Intl.NumberFormat("vi-VN").format(value);
 }
 
@@ -396,19 +402,25 @@ export default function PaymentPage() {
   ]);
 
   useEffect(() => {
+    if (!Number.isFinite(apptId) || apptId <= 0) return;
+
     const ac = new AbortController();
+
     (async () => {
       setErr(null);
       setLoading(true);
+
       try {
         const [opt, ck] = await Promise.all([
           api.checkout.getOptions({ signal: ac.signal }),
           api.checkout.getAppointmentCheckout(apptId, { signal: ac.signal }),
         ]);
+
+        if (ac.signal.aborted) return;
+
         setOptions(opt);
         setCheckout(ck);
 
-        // Pre-select defaults
         const firstPlatform = opt.platforms.find((p) => p.isActive);
         if (firstPlatform) setPlatformId(firstPlatform.platformId);
 
@@ -417,21 +429,28 @@ export default function PaymentPage() {
         const firstMethod = opt.paymentMethods.find((m) => m.isActive);
         if (firstMethod) setMethodKey(firstMethod.methodKey);
 
-        // Pre-fill user data
         try {
           const profile = await api.users.me({ signal: ac.signal });
+          if (ac.signal.aborted) return;
+
           setContactFullName(profile.fullName ?? "");
           setContactEmail(profile.email ?? "");
           setContactPhone(profile.phoneNumber ?? "");
-        } catch {
-          // not logged in, ignore
+        } catch (e) {
+          // ignore abort + ignore not logged in
+          if (ac.signal.aborted || isAbortError(e)) return;
         }
-      } catch {
+      } catch (e) {
+        // ignore abort/cancel (dev StrictMode or navigating away)
+        if (ac.signal.aborted || isAbortError(e)) return;
+
         setErr("Không tải được thông tin thanh toán. Vui lòng thử lại.");
       } finally {
+        if (ac.signal.aborted) return;
         setLoading(false);
       }
     })();
+
     return () => ac.abort();
   }, [apptId]);
 

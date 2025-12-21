@@ -161,3 +161,39 @@ export type MyAppointmentItemDto = {
   paymentStatus?: string;
   meetingJoinUrl?: string;
 };
+
+export type BlogCategoryDto = {
+  categoryId: number;
+  name: string;
+};
+
+export type BlogAuthorDto = {
+  expertId: number;
+  fullName: string;
+  title: string;
+};
+
+export type BlogPostListItemDto = {
+  postId: number;
+  slug?: string;
+  title: string;
+  excerpt: string;
+  coverImageUrl?: string | null;
+  publishedAt: string; // ISO
+  readingMinutes: number;
+  author: BlogAuthorDto;
+  categories: BlogCategoryDto[];
+};
+
+export type BlogPostDetailDto = {
+  postId: number;
+  slug?: string;
+  title: string;
+  content: string;
+  contentFormat: "markdown" | "html" | string;
+  coverImageUrl?: string | null;
+  publishedAt: string; // ISO
+  readingMinutes: number;
+  author: BlogAuthorDto;
+  categories: BlogCategoryDto[];
+};

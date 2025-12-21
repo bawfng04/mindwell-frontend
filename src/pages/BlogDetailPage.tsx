@@ -1,7 +1,19 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { BLOG_POSTS } from "../services/blog";
-import type { BlogPost } from "../types/blog";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { api } from "../services/api";
+import type { BlogPostDetailDto, BlogPostListItemDto } from "../types/api";
+
+function isAbortError(e: unknown) {
+  return (
+    (typeof e === "object" &&
+      e !== null &&
+      "name" in e &&
+      (e as any).name === "AbortError") ||
+    false
+  );
+}
 
 function CalendarIcon() {
   return (
@@ -32,63 +44,119 @@ function ClockIcon() {
   );
 }
 
-function formatDateVi(dateIso: string) {
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateIso);
-  if (!m) return dateIso;
-  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
-  return new Intl.DateTimeFormat("vi-VN", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  }).format(d);
-}
+// function formatDateVi(dateIso: string) {
+//   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateIso);
+//   if (!m) return dateIso;
+//   const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+//   return new Intl.DateTimeFormat("vi-VN", {
+//     day: "numeric",
+//     month: "long",
+//     year: "numeric",
+//   }).format(d);
+// }
 
-function buildSections(post: BlogPost) {
-  // todo: Gọi API
-  // mockdata:
-  return [
-    {
-      h: "Tóm tắt nhanh",
-      p: [
-        post.excerpt,
-        "Bài viết này cung cấp góc nhìn thực tế và các bước áp dụng đơn giản. Bạn có thể thử ngay trong ngày để cảm nhận hiệu quả.",
-      ],
-    },
-    {
-      h: "Dấu hiệu thường gặp",
-      p: [
-        "Bạn dễ mất tập trung, khó thư giãn hoặc suy nghĩ lặp đi lặp lại.",
-        "Cơ thể mệt mỏi dù ngủ đủ, hoặc giấc ngủ không sâu.",
-        "Cảm xúc lên xuống nhanh, dễ cáu gắt hoặc nhạy cảm hơn bình thường.",
-      ],
-    },
-    {
-      h: "Cách áp dụng (gợi ý)",
-      p: [
-        "Chọn 1–2 thói quen nhỏ, làm đều trong 7 ngày để tạo nhịp ổn định.",
-        "Ghi chú nhanh (1 phút) về cảm xúc/điều gây căng thẳng để nhận diện “trigger”.",
-        "Nếu tình trạng kéo dài hoặc ảnh hưởng mạnh tới sinh hoạt, bạn nên cân nhắc trao đổi với chuyên gia.",
-      ],
-    },
-    {
-      h: "Lời khuyên cuối",
-      p: [
-        "Không cần làm hoàn hảo. Chỉ cần bắt đầu nhỏ và duy trì đều.",
-        "Hãy ưu tiên an toàn, nghỉ ngơi và hỗ trợ xã hội (người thân, bạn bè, chuyên gia).",
-      ],
-    },
-  ];
-}
+// function buildSections(post: BlogPost) {
+//   // todo: Gọi API
+//   // mockdata:
+//   return [
+//     {
+//       h: "Tóm tắt nhanh",
+//       p: [
+//         post.excerpt,
+//         "Bài viết này cung cấp góc nhìn thực tế và các bước áp dụng đơn giản. Bạn có thể thử ngay trong ngày để cảm nhận hiệu quả.",
+//       ],
+//     },
+//     {
+//       h: "Dấu hiệu thường gặp",
+//       p: [
+//         "Bạn dễ mất tập trung, khó thư giãn hoặc suy nghĩ lặp đi lặp lại.",
+//         "Cơ thể mệt mỏi dù ngủ đủ, hoặc giấc ngủ không sâu.",
+//         "Cảm xúc lên xuống nhanh, dễ cáu gắt hoặc nhạy cảm hơn bình thường.",
+//       ],
+//     },
+//     {
+//       h: "Cách áp dụng (gợi ý)",
+//       p: [
+//         "Chọn 1–2 thói quen nhỏ, làm đều trong 7 ngày để tạo nhịp ổn định.",
+//         "Ghi chú nhanh (1 phút) về cảm xúc/điều gây căng thẳng để nhận diện “trigger”.",
+//         "Nếu tình trạng kéo dài hoặc ảnh hưởng mạnh tới sinh hoạt, bạn nên cân nhắc trao đổi với chuyên gia.",
+//       ],
+//     },
+//     {
+//       h: "Lời khuyên cuối",
+//       p: [
+//         "Không cần làm hoàn hảo. Chỉ cần bắt đầu nhỏ và duy trì đều.",
+//         "Hãy ưu tiên an toàn, nghỉ ngơi và hỗ trợ xã hội (người thân, bạn bè, chuyên gia).",
+//       ],
+//     },
+//   ];
+// }
 
 export default function BlogDetailPage() {
-  const { id } = useParams();
-  const post = useMemo(() => BLOG_POSTS.find((p) => p.id === id), [id]);
+  const params = useParams<{ id?: string; postId?: string }>();
 
-  if (!post) {
+  const id = useMemo(() => {
+    const raw = params.postId ?? params.id;
+    const n = raw ? Number(raw) : NaN;
+    return Number.isFinite(n) ? n : null;
+  }, [params.id, params.postId]);
+
+  const [post, setPost] = useState<BlogPostDetailDto | null>(null);
+  const [related, setRelated] = useState<BlogPostListItemDto[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (id === null) {
+      setLoading(false);
+      setErr("Bài viết không hợp lệ.");
+      return;
+    }
+
+    const ac = new AbortController();
+
+    (async () => {
+      setErr(null);
+      setLoading(true);
+      try {
+        const [detail, rel] = await Promise.all([
+          api.blog.getPostDetail(id, { signal: ac.signal }),
+          api.blog.listRelated(id, { limit: 3 }, { signal: ac.signal }),
+        ]);
+
+        if (ac.signal.aborted) return;
+
+        setPost(detail);
+        setRelated(rel ?? []);
+      } catch (e) {
+        if (ac.signal.aborted || isAbortError(e)) return;
+        setErr("Không tải được bài viết.");
+        setPost(null);
+        setRelated([]);
+      } finally {
+        if (ac.signal.aborted) return;
+        setLoading(false);
+      }
+    })();
+
+    return () => ac.abort();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="rounded-2xl bg-white p-6 ring-1 ring-black/5">
+        <div className="text-[13px] font-semibold text-black/55">
+          Đang tải bài viết...
+        </div>
+      </div>
+    );
+  }
+
+  if (err || !post) {
     return (
       <div className="rounded-2xl bg-white p-6 ring-1 ring-black/5">
         <div className="text-lg font-extrabold text-[color:var(--corporate-blue)]">
-          Không tìm thấy bài viết
+          {err ?? "Không tìm thấy bài viết"}
         </div>
         <Link
           to="/blog"
@@ -100,7 +168,7 @@ export default function BlogDetailPage() {
     );
   }
 
-  const sections = buildSections(post);
+  const categoryLabel = post.categories?.[0]?.name ?? "Blog";
 
   return (
     <article className="space-y-6">
@@ -114,14 +182,16 @@ export default function BlogDetailPage() {
       {/* Hero */}
       <header className="overflow-hidden rounded-3xl bg-white shadow-[0_10px_30px_rgba(27,73,101,0.12)] ring-1 ring-[color:var(--innovation-sky)]/30">
         <div className="relative aspect-[16/7] bg-[color:var(--calm-background)]">
-          <img
-            src={post.imageUrl}
-            alt={post.title}
-            className="h-full w-full object-cover"
-          />
+          {post.coverImageUrl ? (
+            <img
+              src={post.coverImageUrl}
+              alt={post.title}
+              className="h-full w-full object-cover"
+            />
+          ) : null}
           <div className="absolute left-5 top-5">
             <span className="rounded-full bg-white/90 px-3 py-1 text-[11px] font-extrabold text-[color:var(--corporate-blue)] ring-1 ring-black/5">
-              {post.category}
+              {categoryLabel}
             </span>
           </div>
         </div>
@@ -132,14 +202,14 @@ export default function BlogDetailPage() {
               <span className="text-[color:var(--trust-blue)]/80">
                 <CalendarIcon />
               </span>
-              {formatDateVi(post.dateIso)}
+              {new Date(post.publishedAt).toLocaleDateString("vi-VN")}
             </span>
 
             <span className="inline-flex items-center gap-2">
               <span className="text-[color:var(--trust-blue)]/80">
                 <ClockIcon />
               </span>
-              {post.readMinutes} phút đọc
+              {post.readingMinutes} phút đọc
             </span>
           </div>
 
@@ -147,93 +217,65 @@ export default function BlogDetailPage() {
             {post.title}
           </h1>
 
-          <p className="mt-3 max-w-3xl text-[13px] font-semibold leading-7 text-black/55">
-            {post.excerpt}
-          </p>
-
-          {/* Author */}
-          <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-black/5 pt-5">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 overflow-hidden rounded-full bg-[color:var(--calm-background)] ring-1 ring-black/5">
-                {post.author.avatarUrl ? (
-                  <img
-                    src={post.author.avatarUrl}
-                    alt={post.author.name}
-                    className="h-full w-full object-cover"
-                    loading="lazy"
-                  />
-                ) : null}
-              </div>
-              <div className="leading-tight">
-                <div className="text-[12px] font-extrabold text-[color:var(--corporate-blue)]">
-                  {post.author.name}
-                </div>
-                <div className="text-[11px] font-semibold text-black/45">
-                  {post.author.role}
-                </div>
-              </div>
+          <div className="mt-5 border-t border-black/5 pt-5">
+            <div className="text-[12px] font-extrabold text-[color:var(--corporate-blue)]">
+              {post.author?.fullName ?? "—"}
             </div>
-
-            <div className="flex flex-wrap gap-2">
-              {post.tags.map((t) => (
-                <span
-                  key={t}
-                  className="rounded-full bg-[color:var(--calm-background)] px-3 py-1 text-[11px] font-semibold text-[color:var(--trust-blue)] ring-1 ring-black/5"
-                >
-                  {t}
-                </span>
-              ))}
+            <div className="text-[11px] font-semibold text-black/45">
+              {post.author?.title ?? ""}
             </div>
           </div>
         </div>
       </header>
 
-      {/* Content */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
+        {/* Content */}
         <section className="rounded-3xl bg-white p-6 shadow-[0_10px_30px_rgba(27,73,101,0.10)] ring-1 ring-[color:var(--innovation-sky)]/30 md:p-7">
-          <div className="space-y-7">
-            {sections.map((s) => (
-              <div key={s.h}>
-                <h2 className="text-[16px] font-extrabold text-[color:var(--corporate-blue)]">
-                  {s.h}
-                </h2>
-                <div className="mt-3 space-y-3 text-[13px] font-semibold leading-7 text-black/55">
-                  {s.p.map((x, i) => (
-                    <p key={i}>{x}</p>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
+          {post.contentFormat === "markdown" ? (
+            <div className="space-y-4 text-[13px] font-semibold leading-7 text-black/60">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {post.content}
+              </ReactMarkdown>
+            </div>
+          ) : (
+            <div className="whitespace-pre-wrap text-[13px] font-semibold leading-7 text-black/60">
+              {post.content}
+            </div>
+          )}
         </section>
 
-        {/* Right sidebar */}
+        {/* Related */}
         <aside className="h-fit rounded-3xl bg-white p-6 shadow-[0_10px_30px_rgba(27,73,101,0.10)] ring-1 ring-[color:var(--innovation-sky)]/30 lg:sticky lg:top-20">
           <div className="text-[13px] font-extrabold text-[color:var(--corporate-blue)]">
-            Mục lục
+            Bài viết liên quan
           </div>
-          <ul className="mt-3 space-y-2 text-[12px] font-semibold text-black/55">
-            {sections.map((s) => (
-              <li key={s.h} className="flex items-start gap-2">
-                <span className="mt-[6px] h-2 w-2 rounded-full bg-[color:var(--innovation-sky)]" />
-                <span>{s.h}</span>
-              </li>
-            ))}
-          </ul>
 
-          <div className="mt-5 rounded-2xl bg-[color:var(--calm-background)] p-4 ring-1 ring-black/5">
-            <div className="text-[12px] font-extrabold text-[color:var(--corporate-blue)]">
-              Gợi ý
-            </div>
-            <div className="mt-2 text-[12px] font-semibold leading-6 text-black/55">
-              Nếu bạn muốn trao đổi sâu hơn, hãy đặt lịch tư vấn với chuyên gia
-              phù hợp.
-            </div>
+          <div className="mt-4 space-y-3">
+            {related.length === 0 ? (
+              <div className="text-[12px] font-semibold text-black/55">
+                Không có bài viết liên quan.
+              </div>
+            ) : (
+              related.map((r) => (
+                <Link
+                  key={r.postId}
+                  to={`/blog/${r.postId}`}
+                  className="block rounded-2xl bg-[color:var(--calm-background)] p-4 ring-1 ring-black/5 hover:bg-black/5"
+                >
+                  <div className="text-[12px] font-extrabold text-[color:var(--corporate-blue)] line-clamp-2">
+                    {r.title}
+                  </div>
+                  <div className="mt-2 text-[11px] font-semibold text-black/50 line-clamp-2">
+                    {r.excerpt}
+                  </div>
+                </Link>
+              ))
+            )}
           </div>
 
           <Link
             to="/chuyen-gia"
-            className="mt-4 inline-flex w-full items-center justify-center rounded-2xl bg-[color:var(--trust-blue)] px-4 py-3 text-[12px] font-extrabold text-white hover:brightness-95 active:brightness-90"
+            className="mt-5 inline-flex w-full items-center justify-center rounded-2xl bg-[color:var(--trust-blue)] px-4 py-3 text-[12px] font-extrabold text-white hover:brightness-95 active:brightness-90"
           >
             Xem danh sách chuyên gia
           </Link>

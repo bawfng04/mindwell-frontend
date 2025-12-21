@@ -1,7 +1,18 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { BLOG_POSTS } from "../services/blog";
-import type { BlogCategory, BlogPost } from "../types/blog";
+// import { BLOG_POSTS } from "../services/blog";
+import type { BlogCategoryDto, BlogPostListItemDto } from "../types/api";
+import { api } from "../services/api";
+
+function isAbortError(e: unknown) {
+  return (
+    (typeof e === "object" &&
+      e !== null &&
+      "name" in e &&
+      (e as any).name === "AbortError") ||
+    false
+  );
+}
 
 function SearchIcon() {
   return (
@@ -46,16 +57,16 @@ function ClockIcon() {
   );
 }
 
-function formatDateVi(dateIso: string) {
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateIso);
-  if (!m) return dateIso;
-  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
-  return new Intl.DateTimeFormat("vi-VN", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  }).format(d);
-}
+// function formatDateVi(dateIso: string) {
+//   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateIso);
+//   if (!m) return dateIso;
+//   const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+//   return new Intl.DateTimeFormat("vi-VN", {
+//     day: "numeric",
+//     month: "long",
+//     year: "numeric",
+//   }).format(d);
+// }
 
 function Chip({
   active,
@@ -82,20 +93,114 @@ function Chip({
   );
 }
 
-function PostCard({ post }: { post: BlogPost }) {
+// function PostCard({ post }: { post: BlogPost }) {
+//   return (
+//     <article className="overflow-hidden rounded-3xl bg-white shadow-[0_10px_30px_rgba(27,73,101,0.12)] ring-1 ring-(--innovation-sky)/30">
+//       <Link to={`/blog/${post.id}`} className="block">
+//         <div className="relative aspect-video bg-(--calm-background)">
+//           <img
+//             src={post.imageUrl}
+//             alt={post.title}
+//             className="h-full w-full object-cover"
+//             loading="lazy"
+//           />
+//           <div className="absolute left-4 top-4">
+//             <span className="rounded-full bg-white/90 px-3 py-1 text-[11px] font-extrabold text-(--corporate-blue) ring-1 ring-black/5">
+//               {post.category}
+//             </span>
+//           </div>
+//         </div>
+//       </Link>
+
+//       <div className="p-5">
+//         <div className="flex items-center gap-4 text-[11px] font-semibold text-black/45">
+//           <span className="inline-flex items-center gap-2">
+//             <span className="text-(--trust-blue)/80">
+//               <CalendarIcon />
+//             </span>
+//             {formatDateVi(post.dateIso)}
+//           </span>
+//           <span className="inline-flex items-center gap-2">
+//             <span className="text-(--trust-blue)/80">
+//               <ClockIcon />
+//             </span>
+//             {post.readMinutes} phút đọc
+//           </span>
+//         </div>
+
+//         <h3 className="mt-3 line-clamp-2 text-[16px] font-extrabold text-(--corporate-blue)">
+//           {post.title}
+//         </h3>
+
+//         <p className="mt-2 line-clamp-3 text-[12px] font-semibold leading-6 text-black/50">
+//           {post.excerpt}
+//         </p>
+
+//         <div className="mt-4 flex flex-wrap gap-2">
+//           {post.tags.map((t) => (
+//             <span
+//               key={t}
+//               className="rounded-full bg-(--calm-background) px-3 py-1 text-[11px] font-semibold text-(--trust-blue) ring-1 ring-black/5"
+//             >
+//               {t}
+//             </span>
+//           ))}
+//         </div>
+
+//         <div className="mt-5 flex items-center justify-between border-t border-black/5 pt-4">
+//           <div className="flex items-center gap-3">
+//             <div className="h-9 w-9 overflow-hidden rounded-full bg-(--calm-background) ring-1 ring-black/5">
+//               {post.author.avatarUrl ? (
+//                 <img
+//                   src={post.author.avatarUrl}
+//                   alt={post.author.name}
+//                   className="h-full w-full object-cover"
+//                   loading="lazy"
+//                 />
+//               ) : null}
+//             </div>
+//             <div className="leading-tight">
+//               <div className="text-[12px] font-extrabold text-(--corporate-blue)">
+//                 {post.author.name}
+//               </div>
+//               <div className="text-[10px] font-semibold text-black/45">
+//                 {post.author.role}
+//               </div>
+//             </div>
+//           </div>
+
+//           <Link
+//             to={`/blog/${post.id}`}
+//             className="inline-flex items-center justify-center rounded-full bg-(--calm-background) px-3 py-2 text-[12px] font-extrabold text-(--corporate-blue) ring-1 ring-black/5 hover:bg-black/5"
+//             aria-label="Xem chi tiết"
+//           >
+//             →
+//           </Link>
+//         </div>
+//       </div>
+//     </article>
+//   );
+// }
+
+function PostCard({ post }: { post: BlogPostListItemDto }) {
+  const categoryLabel = post.categories?.[0]?.name ?? "Blog";
+
   return (
     <article className="overflow-hidden rounded-3xl bg-white shadow-[0_10px_30px_rgba(27,73,101,0.12)] ring-1 ring-(--innovation-sky)/30">
-      <Link to={`/blog/${post.id}`} className="block">
+      <Link to={`/blog/${post.postId}`} className="block">
         <div className="relative aspect-video bg-(--calm-background)">
-          <img
-            src={post.imageUrl}
-            alt={post.title}
-            className="h-full w-full object-cover"
-            loading="lazy"
-          />
+          {post.coverImageUrl ? (
+            <img
+              src={post.coverImageUrl}
+              alt={post.title}
+              className="h-full w-full object-cover"
+              loading="lazy"
+            />
+          ) : null}
+
           <div className="absolute left-4 top-4">
             <span className="rounded-full bg-white/90 px-3 py-1 text-[11px] font-extrabold text-(--corporate-blue) ring-1 ring-black/5">
-              {post.category}
+              {categoryLabel}
             </span>
           </div>
         </div>
@@ -107,13 +212,13 @@ function PostCard({ post }: { post: BlogPost }) {
             <span className="text-(--trust-blue)/80">
               <CalendarIcon />
             </span>
-            {formatDateVi(post.dateIso)}
+            {new Date(post.publishedAt).toLocaleDateString("vi-VN")}
           </span>
           <span className="inline-flex items-center gap-2">
             <span className="text-(--trust-blue)/80">
               <ClockIcon />
             </span>
-            {post.readMinutes} phút đọc
+            {post.readingMinutes} phút đọc
           </span>
         </div>
 
@@ -125,41 +230,18 @@ function PostCard({ post }: { post: BlogPost }) {
           {post.excerpt}
         </p>
 
-        <div className="mt-4 flex flex-wrap gap-2">
-          {post.tags.map((t) => (
-            <span
-              key={t}
-              className="rounded-full bg-(--calm-background) px-3 py-1 text-[11px] font-semibold text-(--trust-blue) ring-1 ring-black/5"
-            >
-              {t}
-            </span>
-          ))}
-        </div>
-
         <div className="mt-5 flex items-center justify-between border-t border-black/5 pt-4">
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 overflow-hidden rounded-full bg-(--calm-background) ring-1 ring-black/5">
-              {post.author.avatarUrl ? (
-                <img
-                  src={post.author.avatarUrl}
-                  alt={post.author.name}
-                  className="h-full w-full object-cover"
-                  loading="lazy"
-                />
-              ) : null}
+          <div className="leading-tight">
+            <div className="text-[12px] font-extrabold text-(--corporate-blue)">
+              {post.author?.fullName ?? "—"}
             </div>
-            <div className="leading-tight">
-              <div className="text-[12px] font-extrabold text-(--corporate-blue)">
-                {post.author.name}
-              </div>
-              <div className="text-[10px] font-semibold text-black/45">
-                {post.author.role}
-              </div>
+            <div className="text-[10px] font-semibold text-black/45">
+              {post.author?.title ?? ""}
             </div>
           </div>
 
           <Link
-            to={`/blog/${post.id}`}
+            to={`/blog/${post.postId}`}
             className="inline-flex items-center justify-center rounded-full bg-(--calm-background) px-3 py-2 text-[12px] font-extrabold text-(--corporate-blue) ring-1 ring-black/5 hover:bg-black/5"
             aria-label="Xem chi tiết"
           >
@@ -171,27 +253,106 @@ function PostCard({ post }: { post: BlogPost }) {
   );
 }
 
+// export default function BlogPage() {
+//   const [q, setQ] = useState("");
+//   const [category, setCategory] = useState<BlogCategory>("Tất cả");
+
+//   const categories = useMemo(() => {
+//     const set = new Set(BLOG_POSTS.map((p) => p.category));
+//     return ["Tất cả", ...Array.from(set)] as BlogCategory[];
+//   }, []);
+
+//   const filtered = useMemo(() => {
+//     const needle = q.trim().toLowerCase();
+//     return BLOG_POSTS.filter((p) => {
+//       const matchQ =
+//         !needle ||
+//         `${p.title} ${p.excerpt} ${p.tags.join(" ")} ${p.author.name}`
+//           .toLowerCase()
+//           .includes(needle);
+//       const matchC = category === "Tất cả" || p.category === category;
+//       return matchQ && matchC;
+//     });
+//   }, [q, category]);
+
 export default function BlogPage() {
   const [q, setQ] = useState("");
-  const [category, setCategory] = useState<BlogCategory>("Tất cả");
+  const [categoryId, setCategoryId] = useState<number | null>(null);
 
-  const categories = useMemo(() => {
-    const set = new Set(BLOG_POSTS.map((p) => p.category));
-    return ["Tất cả", ...Array.from(set)] as BlogCategory[];
+  const [categories, setCategories] = useState<BlogCategoryDto[]>([]);
+  const [items, setItems] = useState<BlogPostListItemDto[]>([]);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  // categories
+  useEffect(() => {
+    const ac = new AbortController();
+
+    (async () => {
+      try {
+        const res = await api.blog.listCategories({ signal: ac.signal });
+        if (ac.signal.aborted) return;
+        setCategories(res ?? []);
+      } catch (e) {
+        if (ac.signal.aborted || isAbortError(e)) return;
+      }
+    })();
+
+    return () => ac.abort();
   }, []);
 
-  const filtered = useMemo(() => {
-    const needle = q.trim().toLowerCase();
-    return BLOG_POSTS.filter((p) => {
-      const matchQ =
-        !needle ||
-        `${p.title} ${p.excerpt} ${p.tags.join(" ")} ${p.author.name}`
-          .toLowerCase()
-          .includes(needle);
-      const matchC = category === "Tất cả" || p.category === category;
-      return matchQ && matchC;
-    });
-  }, [q, category]);
+  // reset page when filter/search changes
+  useEffect(() => {
+    setPage(0);
+  }, [q, categoryId]);
+
+  // posts
+  useEffect(() => {
+    const ac = new AbortController();
+
+    (async () => {
+      setErr(null);
+      setLoading(true);
+      try {
+        const res = await api.blog.listPosts(
+          {
+            q: q.trim() || undefined,
+            categoryId: categoryId ?? undefined,
+            page,
+            size: 9,
+            sort: ["publishedAt,desc"],
+          },
+          { signal: ac.signal }
+        );
+
+        if (ac.signal.aborted) return;
+
+        setItems(res.items ?? []);
+        setTotalPages(res.totalPages ?? 1);
+      } catch (e) {
+        if (ac.signal.aborted || isAbortError(e)) return;
+        setErr("Không tải được danh sách bài viết.");
+        setItems([]);
+        setTotalPages(1);
+      } finally {
+        if (ac.signal.aborted) return;
+        setLoading(false);
+      }
+    })();
+
+    return () => ac.abort();
+  }, [q, categoryId, page]);
+
+  const chips = useMemo(
+    () => [
+      { categoryId: null as number | null, name: "Tất cả" },
+      ...categories,
+    ],
+    [categories]
+  );
 
   return (
     <section>
@@ -222,20 +383,53 @@ export default function BlogPage() {
         </div>
       </div>
 
-      {/* Category chips */}
+      {/* Chips */}
       <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
-        {categories.map((c) => (
-          <Chip key={c} active={c === category} onClick={() => setCategory(c)}>
-            {c}
+        {chips.map((c) => (
+          <Chip
+            key={c.categoryId ?? "all"}
+            active={(c.categoryId ?? null) === categoryId}
+            onClick={() => setCategoryId(c.categoryId ?? null)}
+          >
+            {c.name}
           </Chip>
         ))}
       </div>
 
+      {err ? (
+        <div className="mt-6 rounded-2xl bg-white p-4 text-[12px] font-semibold text-red-700 ring-1 ring-red-200">
+          {err}
+        </div>
+      ) : null}
+
       {/* Grid */}
       <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-3">
-        {filtered.map((p) => (
-          <PostCard key={p.id} post={p} />
+        {items.map((p) => (
+          <PostCard key={p.postId} post={p} />
         ))}
+      </div>
+
+      {/* Paging */}
+      <div className="mt-6 flex items-center justify-center gap-3">
+        <button
+          type="button"
+          disabled={loading || page <= 0}
+          onClick={() => setPage((p) => Math.max(0, p - 1))}
+          className="rounded-full bg-white px-4 py-2 text-[12px] font-extrabold text-(--corporate-blue) ring-1 ring-black/5 disabled:opacity-50"
+        >
+          ← Trước
+        </button>
+        <div className="text-[12px] font-semibold text-black/55">
+          Trang {page + 1} / {totalPages}
+        </div>
+        <button
+          type="button"
+          disabled={loading || page + 1 >= totalPages}
+          onClick={() => setPage((p) => p + 1)}
+          className="rounded-full bg-white px-4 py-2 text-[12px] font-extrabold text-(--corporate-blue) ring-1 ring-black/5 disabled:opacity-50"
+        >
+          Sau →
+        </button>
       </div>
     </section>
   );
