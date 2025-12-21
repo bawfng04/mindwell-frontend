@@ -9,6 +9,7 @@ import BlogPage from "./pages/BlogPage.tsx";
 import BlogDetailPage from "./pages/BlogDetailPage.tsx";
 import SignupPage from "./pages/SignupPage.tsx";
 import LoginPage from "./pages/LoginPage.tsx";
+import NotFound from "./components/NotFound.tsx";
 
 function App() {
   return (
@@ -23,10 +24,7 @@ function App() {
         <Route path="/blog/:id" element={<BlogDetailPage />} />
         <Route path="/dang-ky" element={<SignupPage />} />
         <Route path="/dang-nhap" element={<LoginPage />} />
-        <Route
-          path="*"
-          element={<div className="py-10 text-center">404 Not Found</div>}
-        />
+        <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>
   );
