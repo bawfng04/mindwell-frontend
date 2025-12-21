@@ -73,8 +73,8 @@ function Chip({
       className={[
         "rounded-full px-4 py-2 text-[12px] font-extrabold ring-1 transition-colors",
         active
-          ? "bg-[color:var(--trust-blue)] text-white ring-[color:var(--trust-blue)]"
-          : "bg-white text-[color:var(--corporate-blue)] ring-[color:var(--innovation-sky)]/45 hover:bg-black/5",
+          ? "bg-(--trust-blue) text-white ring-(--trust-blue)"
+          : "bg-white text-(--corporate-blue) ring-(--innovation-sky)/45 hover:bg-black/5",
       ].join(" ")}
     >
       {children}
@@ -84,9 +84,9 @@ function Chip({
 
 function PostCard({ post }: { post: BlogPost }) {
   return (
-    <article className="overflow-hidden rounded-3xl bg-white shadow-[0_10px_30px_rgba(27,73,101,0.12)] ring-1 ring-[color:var(--innovation-sky)]/30">
+    <article className="overflow-hidden rounded-3xl bg-white shadow-[0_10px_30px_rgba(27,73,101,0.12)] ring-1 ring-(--innovation-sky)/30">
       <Link to={`/blog/${post.id}`} className="block">
-        <div className="relative aspect-[16/9] bg-[color:var(--calm-background)]">
+        <div className="relative aspect-video bg-(--calm-background)">
           <img
             src={post.imageUrl}
             alt={post.title}
@@ -94,7 +94,7 @@ function PostCard({ post }: { post: BlogPost }) {
             loading="lazy"
           />
           <div className="absolute left-4 top-4">
-            <span className="rounded-full bg-white/90 px-3 py-1 text-[11px] font-extrabold text-[color:var(--corporate-blue)] ring-1 ring-black/5">
+            <span className="rounded-full bg-white/90 px-3 py-1 text-[11px] font-extrabold text-(--corporate-blue) ring-1 ring-black/5">
               {post.category}
             </span>
           </div>
@@ -104,20 +104,20 @@ function PostCard({ post }: { post: BlogPost }) {
       <div className="p-5">
         <div className="flex items-center gap-4 text-[11px] font-semibold text-black/45">
           <span className="inline-flex items-center gap-2">
-            <span className="text-[color:var(--trust-blue)]/80">
+            <span className="text-(--trust-blue)/80">
               <CalendarIcon />
             </span>
             {formatDateVi(post.dateIso)}
           </span>
           <span className="inline-flex items-center gap-2">
-            <span className="text-[color:var(--trust-blue)]/80">
+            <span className="text-(--trust-blue)/80">
               <ClockIcon />
             </span>
             {post.readMinutes} phút đọc
           </span>
         </div>
 
-        <h3 className="mt-3 line-clamp-2 text-[16px] font-extrabold text-[color:var(--corporate-blue)]">
+        <h3 className="mt-3 line-clamp-2 text-[16px] font-extrabold text-(--corporate-blue)">
           {post.title}
         </h3>
 
@@ -129,7 +129,7 @@ function PostCard({ post }: { post: BlogPost }) {
           {post.tags.map((t) => (
             <span
               key={t}
-              className="rounded-full bg-[color:var(--calm-background)] px-3 py-1 text-[11px] font-semibold text-[color:var(--trust-blue)] ring-1 ring-black/5"
+              className="rounded-full bg-(--calm-background) px-3 py-1 text-[11px] font-semibold text-(--trust-blue) ring-1 ring-black/5"
             >
               {t}
             </span>
@@ -138,7 +138,7 @@ function PostCard({ post }: { post: BlogPost }) {
 
         <div className="mt-5 flex items-center justify-between border-t border-black/5 pt-4">
           <div className="flex items-center gap-3">
-            <div className="h-9 w-9 overflow-hidden rounded-full bg-[color:var(--calm-background)] ring-1 ring-black/5">
+            <div className="h-9 w-9 overflow-hidden rounded-full bg-(--calm-background) ring-1 ring-black/5">
               {post.author.avatarUrl ? (
                 <img
                   src={post.author.avatarUrl}
@@ -149,7 +149,7 @@ function PostCard({ post }: { post: BlogPost }) {
               ) : null}
             </div>
             <div className="leading-tight">
-              <div className="text-[12px] font-extrabold text-[color:var(--corporate-blue)]">
+              <div className="text-[12px] font-extrabold text-(--corporate-blue)">
                 {post.author.name}
               </div>
               <div className="text-[10px] font-semibold text-black/45">
@@ -160,7 +160,7 @@ function PostCard({ post }: { post: BlogPost }) {
 
           <Link
             to={`/blog/${post.id}`}
-            className="inline-flex items-center justify-center rounded-full bg-[color:var(--calm-background)] px-3 py-2 text-[12px] font-extrabold text-[color:var(--corporate-blue)] ring-1 ring-black/5 hover:bg-black/5"
+            className="inline-flex items-center justify-center rounded-full bg-(--calm-background) px-3 py-2 text-[12px] font-extrabold text-(--corporate-blue) ring-1 ring-black/5 hover:bg-black/5"
             aria-label="Xem chi tiết"
           >
             →
@@ -196,7 +196,7 @@ export default function BlogPage() {
   return (
     <section>
       {/* Hero */}
-      <div className="relative overflow-hidden rounded-3xl bg-[color:var(--trust-blue)] shadow-[0_20px_60px_rgba(27,73,101,0.25)] ring-1 ring-white/15">
+      <div className="relative overflow-hidden rounded-3xl bg-(--trust-blue) shadow-[0_20px_60px_rgba(27,73,101,0.25)] ring-1 ring-white/15">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.22),transparent_40%),radial-gradient(circle_at_80%_10%,rgba(255,255,255,0.18),transparent_45%),radial-gradient(circle_at_70%_80%,rgba(0,0,0,0.12),transparent_55%)]" />
         <div className="relative px-6 py-10 text-center md:px-10">
           <h1 className="text-4xl font-extrabold tracking-tight text-white">
@@ -208,14 +208,14 @@ export default function BlogPage() {
 
           <div className="mx-auto mt-5 max-w-xl">
             <div className="relative">
-              <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[color:var(--trust-blue)]/60">
+              <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-(--trust-blue)/60">
                 <SearchIcon />
               </span>
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="Tìm kiếm bài viết..."
-                className="h-11 w-full rounded-2xl bg-white px-12 text-[13px] font-semibold text-[color:var(--corporate-blue)] outline-none ring-1 ring-white/40 placeholder:text-black/35"
+                className="h-11 w-full rounded-2xl bg-white px-12 text-[13px] font-semibold text-(--corporate-blue) outline-none ring-1 ring-white/40 placeholder:text-black/35"
               />
             </div>
           </div>
