@@ -90,7 +90,7 @@ export default function MindPointsPage() {
     <div className="space-y-6">
       {/* Page title (outside hero) */}
       <div className="text-center">
-        <Badge>⚡ Linh hoạt &amp; Tiết kiệm</Badge>
+        {/* <Badge>⚡ Linh hoạt &amp; Tiết kiệm</Badge> */}
 
         <h1 className="mt-4 text-3xl font-extrabold text-[color:var(--corporate-blue)]">
           MindPoints &amp; Gói thành viên

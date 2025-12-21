@@ -21,7 +21,7 @@ import type {
   BlogCategoryDto,
   BlogPostDetailDto,
   BlogPostListItemDto,
-  AppointmentDto,
+  // AppointmentDto,
 } from "../types/api";
 
 export const api = {
@@ -47,9 +47,8 @@ export const api = {
   users: {
     me(opts?: { signal?: AbortSignal }) {
       return httpJson<MeDto>(buildUrl("/api/v1/users/me"), {
-        method: "GET",
         signal: opts?.signal,
-        headers: withAuth(),
+        headers: withAuth({ Accept: "application/json" }),
       });
     },
   },

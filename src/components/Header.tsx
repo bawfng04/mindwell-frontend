@@ -2,6 +2,18 @@ import React from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import logo from "../assets/mindwell-bgred.png";
 import { clearAccessToken, getAccessToken } from "../services/token";
+import { api } from "../services/api";
+import type { MeDto } from "../types/api";
+
+function isAbortError(e: unknown) {
+  return (
+    (typeof e === "object" &&
+      e !== null &&
+      "name" in e &&
+      (e as any).name === "AbortError") ||
+    false
+  );
+}
 
 // const LogoMark = () => (
 //   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[color:var(--calm-background)] ring-1 ring-black/5">
@@ -84,6 +96,8 @@ export default function Header() {
   const [isAuthed, setIsAuthed] = React.useState(() =>
     Boolean(getAccessToken())
   );
+  const [me, setMe] = React.useState<MeDto | null>(null);
+
   const dropdownRef = React.useRef<HTMLDivElement | null>(null);
 
   const handleUserIconClick = () => {
@@ -102,30 +116,38 @@ export default function Header() {
     };
   }, []);
 
+  // fetch profile when authed
   React.useEffect(() => {
-    if (!isShowLoginOptions) return;
-    const onMouseDown = (e: MouseEvent) => {
-      const el = dropdownRef.current;
-      if (!el) return;
-      if (e.target instanceof Node && !el.contains(e.target)) {
-        setIsShowLoginOptions(false);
+    if (!isAuthed) {
+      setMe(null);
+      return;
+    }
+
+    const ac = new AbortController();
+
+    (async () => {
+      try {
+        const res = await api.users.me({ signal: ac.signal });
+        if (ac.signal.aborted) return;
+        setMe(res);
+      } catch (e) {
+        if (ac.signal.aborted || isAbortError(e)) return;
+
+        // token invalid/expired
+        const status = (e as any)?.status;
+        if (status === 401) {
+          clearAccessToken();
+          setMe(null);
+        }
       }
-    };
+    })();
 
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setIsShowLoginOptions(false);
-    };
-    document.addEventListener("mousedown", onMouseDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("mousedown", onMouseDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [isShowLoginOptions]);
-
+    return () => ac.abort();
+  }, [isAuthed]);
   function logout() {
     clearAccessToken();
     setIsShowLoginOptions(false);
+    setMe(null);
     nav("/dang-nhap");
   }
 
@@ -212,7 +234,8 @@ export default function Header() {
             <span className="text-[color:var(--trust-blue)]">
               <CoinIcon />
             </span>
-            <span>2,450</span>
+
+            <span>{me ? me.mindpointsBalance : "—"}</span>
             <span className="font-medium text-black/45">điểm</span>
           </div>
 
@@ -236,6 +259,7 @@ export default function Header() {
             className="absolute top-16 right-4 w-56 rounded-2xl bg-white shadow-[0_10px_30px_rgba(27,73,101,0.12)] ring-1 ring-black/5 overflow-hidden"
           >
             {!isAuthed ? (
+              // ...existing code...
               <>
                 <NavLink
                   to="/dang-nhap"
@@ -254,6 +278,15 @@ export default function Header() {
               </>
             ) : (
               <>
+                <div className="px-4 py-3 border-b border-black/5">
+                  <div className="text-[12px] font-extrabold text-[color:var(--corporate-blue)]">
+                    {me?.fullName ?? "Tài khoản"}
+                  </div>
+                  <div className="text-[11px] font-semibold text-black/45">
+                    {me?.email ?? ""}
+                  </div>
+                </div>
+
                 <NavLink
                   to="/mindpoints"
                   onClick={() => setIsShowLoginOptions(false)}
@@ -261,6 +294,15 @@ export default function Header() {
                 >
                   MindPoints
                 </NavLink>
+
+                <NavLink
+                  to="/lich-hen"
+                  onClick={() => setIsShowLoginOptions(false)}
+                  className="block px-4 py-3 text-sm font-medium text-[color:var(--corporate-blue)] hover:bg-black/5"
+                >
+                  Lịch hẹn
+                </NavLink>
+
                 <button
                   type="button"
                   onClick={logout}
