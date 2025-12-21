@@ -256,9 +256,9 @@ export default function Footer() {
         <div className="mt-8 flex flex-col gap-4 text-[16px] font-medium text-white/60 md:flex-row md:items-center md:justify-between">
           <div>© 2025 MindWell. Chưa đăng ký bản quyền.</div>
           <div className="flex items-center gap-2">
-            <span>Made with</span>
+            {/* <span>Made with</span>
             <Heart />
-            <span>by GPT 5.2</span>
+            <span>by GPT 5.2</span> */}
           </div>
         </div>
       </div>
