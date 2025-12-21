@@ -1,7 +1,11 @@
+// mindwell-frontend/src/pages/LoginPage.tsx
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import phd from "../assets/res-placeholder.png";
+import { api } from "../services/api";
+import { setAccessToken } from "../services/token";
 
+// --- START ICONS & UI COMPONENTS ---
 function EyeIcon({ open }: { open: boolean }) {
   return open ? (
     <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
@@ -102,6 +106,7 @@ function Field({
             "h-11 w-full rounded-2xl border bg-white px-11 pr-12 text-[13px] font-semibold text-[color:var(--corporate-blue)] outline-none",
             "border-[color:var(--innovation-sky)]/45 focus:border-[color:var(--innovation-sky)]",
             "placeholder:text-black/30",
+            "disabled:bg-gray-50 disabled:text-gray-400", // Thêm style disabled
           ].join(" ")}
         />
 
@@ -114,24 +119,52 @@ function Field({
     </label>
   );
 }
+// --- END ICONS & UI COMPONENTS ---
 
 export default function LoginPage() {
+  const nav = useNavigate();
+
+  // State logic merged
   const [email, setEmail] = useState("");
-  const [pw, setPw] = useState("");
+  const [password, setPassword] = useState(""); // Đổi tên từ pw -> password để khớp API
   const [showPw, setShowPw] = useState(false);
 
+  // API State logic
+  const [err, setErr] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  // Validation UI logic
   const emailOk = useMemo(() => {
     const v = email.trim();
     if (!v) return false;
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
   }, [email]);
 
-  const canSubmit = emailOk && pw.length > 0;
+  const canSubmit = emailOk && password.length > 0;
+
+  // Handler xử lý API
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!canSubmit || loading) return;
+
+    setErr(null);
+    setLoading(true);
+
+    try {
+      const res = await api.auth.login({ email, password });
+      setAccessToken(res.accessToken);
+      nav("/");
+    } catch {
+      setErr("Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <div className="overflow-hidden rounded-3xl bg-white shadow-[0_20px_60px_rgba(27,73,101,0.20)] ring-1 ring-[color:var(--innovation-sky)]/25">
       <div className="grid grid-cols-1 md:grid-cols-[1.2fr_1fr]">
-        {/* Left panel */}
+        {/* Left panel - UI Only */}
         <div className="relative min-h-[280px] bg-[color:var(--trust-blue)] md:min-h-[560px]">
           <img
             src={phd}
@@ -163,7 +196,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Right form */}
+        {/* Right form - UI + Logic */}
         <div className="p-7 md:p-8">
           <div className="text-center">
             <h1 className="text-2xl font-extrabold text-[color:var(--corporate-blue)]">
@@ -174,15 +207,8 @@ export default function LoginPage() {
             </p>
           </div>
 
-          <form
-            className="mt-6 space-y-4"
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (!canSubmit) return;
-              // TODO: integrate API login
-              alert("Đăng nhập thành công (mock).");
-            }}
-          >
+          <form className="mt-6 space-y-4" onSubmit={onSubmit}>
+            {/* Email Field */}
             <Field
               label="Email"
               required
@@ -192,23 +218,27 @@ export default function LoginPage() {
               placeholder="email@example.com"
               autoComplete="email"
               inputMode="email"
+              disabled={loading} // Disable khi đang call API
             />
+            {/* UI validation error */}
             {!emailOk && email ? (
               <div className="text-[11px] font-semibold text-red-500">
                 Email không hợp lệ.
               </div>
             ) : null}
 
+            {/* Password Field */}
             <div>
               <Field
                 label="Mật khẩu"
                 required
                 icon={<LockIcon />}
                 type={showPw ? "text" : "password"}
-                value={pw}
-                onChange={(e) => setPw(e.target.value)}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 placeholder="Nhập mật khẩu"
                 autoComplete="current-password"
+                disabled={loading} // Disable khi đang call API
                 right={
                   <button
                     type="button"
@@ -232,17 +262,25 @@ export default function LoginPage() {
               </div>
             </div>
 
+            {/* API Error Message Display */}
+            {err ? (
+              <div className="rounded-xl bg-red-50 p-3 text-center text-[12px] font-semibold text-red-600">
+                {err}
+              </div>
+            ) : null}
+
+            {/* Submit Button */}
             <button
               type="submit"
-              disabled={!canSubmit}
+              disabled={!canSubmit || loading}
               className={[
                 "mt-2 w-full rounded-2xl px-4 py-3 text-[13px] font-extrabold shadow-sm transition-colors",
-                canSubmit
+                canSubmit && !loading
                   ? "bg-[color:var(--trust-blue)] text-white hover:brightness-95 active:brightness-90"
-                  : "bg-black/10 text-black/40",
+                  : "bg-black/10 text-black/40 cursor-not-allowed",
               ].join(" ")}
             >
-              Đăng nhập
+              {loading ? "Đang đăng nhập..." : "Đăng nhập"}
             </button>
 
             <div className="mt-3 text-center text-[12px] font-semibold text-black/45">

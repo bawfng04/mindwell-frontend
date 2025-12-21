@@ -1,7 +1,11 @@
+// mindwell-frontend/src/pages/SignupPage.tsx
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import phd from "../assets/res-placeholder.png";
+import { api } from "../services/api";
+import { setAccessToken } from "../services/token";
 
+// --- START ICONS & UI COMPONENTS ---
 function EyeIcon({ open }: { open: boolean }) {
   return open ? (
     <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
@@ -93,6 +97,22 @@ function UserIcon() {
   );
 }
 
+// Added new Phone Icon for consistency
+function PhoneIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 function Field({
   label,
   required,
@@ -122,6 +142,7 @@ function Field({
             "h-11 w-full rounded-2xl border bg-white px-11 pr-12 text-[13px] font-semibold text-[color:var(--corporate-blue)] outline-none",
             "border-[color:var(--innovation-sky)]/45 focus:border-[color:var(--innovation-sky)]",
             "placeholder:text-black/30",
+            "disabled:bg-gray-50 disabled:text-gray-400",
           ].join(" ")}
         />
 
@@ -134,51 +155,84 @@ function Field({
     </label>
   );
 }
+// --- END ICONS & UI COMPONENTS ---
 
 export default function SignupPage() {
+  const nav = useNavigate();
+
+  // State
   const [fullName, setFullName] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState(""); // Added phoneNumber
   const [email, setEmail] = useState("");
-  const [pw, setPw] = useState("");
-  const [pw2, setPw2] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
 
+  // UI State
   const [showPw, setShowPw] = useState(false);
-  const [showPw2, setShowPw2] = useState(false);
+  const [showConfirmPw, setShowConfirmPw] = useState(false);
 
+  // API State
+  const [err, setErr] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  // Validation
   const emailOk = useMemo(() => {
     const v = email.trim();
     if (!v) return false;
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
   }, [email]);
 
-  const pwOk = pw.length >= 6;
-  const pwMatch = pw && pw2 && pw === pw2;
+  const pwOk = password.length >= 6;
+  const pwMatch = password && confirmPw && password === confirmPw;
+  const nameOk = fullName.trim().length > 0;
 
-  const canSubmit = fullName.trim() && emailOk && pwOk && pwMatch;
+  const canSubmit = nameOk && emailOk && pwOk && pwMatch;
+
+  // Handle Submit
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!canSubmit || loading) return;
+
+    setErr(null);
+    setLoading(true);
+
+    try {
+      // API call with all fields
+      const res = await api.auth.register({
+        email,
+        password,
+        fullName,
+        phoneNumber,
+      });
+
+      setAccessToken(res.accessToken);
+      nav("/");
+    } catch {
+      setErr("Đăng ký thất bại. Vui lòng thử lại.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <div className="overflow-hidden rounded-3xl bg-white shadow-[0_20px_60px_rgba(27,73,101,0.20)] ring-1 ring-[color:var(--innovation-sky)]/25">
       <div className="grid grid-cols-1 md:grid-cols-[1.2fr_1fr]">
-        {/* Left panel */}
+        {/* Left panel - UI Only */}
         <div className="relative min-h-[280px] bg-[color:var(--trust-blue)] md:min-h-[560px]">
-          {/* image */}
           <img
             src={phd}
             alt=""
             className="absolute inset-0 h-full w-full object-cover"
             aria-hidden="true"
           />
-
-          {/* blue overlay (tint) */}
           <div
             className="absolute inset-0 bg-[color:var(--trust-blue)]/70"
             aria-hidden="true"
           />
-
           <div
             className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.14),transparent_45%),radial-gradient(circle_at_80%_10%,rgba(255,255,255,0.10),transparent_45%),linear-gradient(180deg,rgba(0,0,0,0.10),rgba(0,0,0,0.35))]"
             aria-hidden="true"
           />
-
           <div className="relative flex h-full items-center justify-center p-8 text-center md:justify-start md:text-left">
             <div className="max-w-md">
               <div className="text-[25px] font-extrabold text-white">
@@ -192,7 +246,7 @@ export default function SignupPage() {
           </div>
         </div>
 
-        {/* Right form */}
+        {/* Right form - UI + Logic */}
         <div className="p-7 md:p-8">
           <div className="text-center">
             <h1 className="text-2xl font-extrabold text-[color:var(--corporate-blue)]">
@@ -203,15 +257,8 @@ export default function SignupPage() {
             </p>
           </div>
 
-          <form
-            className="mt-6 space-y-4"
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (!canSubmit) return;
-              // TODO: integrate API register
-              alert("Đăng ký thành công (mock).");
-            }}
-          >
+          <form className="mt-6 space-y-4" onSubmit={onSubmit}>
+            {/* Full Name */}
             <Field
               label="Họ và tên"
               required
@@ -220,8 +267,22 @@ export default function SignupPage() {
               onChange={(e) => setFullName(e.target.value)}
               placeholder="Nhập họ và tên"
               autoComplete="name"
+              disabled={loading}
             />
 
+            {/* Phone Number (Added) */}
+            <Field
+              label="Số điện thoại"
+              icon={<PhoneIcon />}
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+              placeholder="Nhập số điện thoại (tuỳ chọn)"
+              autoComplete="tel"
+              inputMode="tel"
+              disabled={loading}
+            />
+
+            {/* Email */}
             <Field
               label="Email"
               required
@@ -231,6 +292,7 @@ export default function SignupPage() {
               placeholder="email@example.com"
               autoComplete="email"
               inputMode="email"
+              disabled={loading}
             />
             {!emailOk && email ? (
               <div className="text-[11px] font-semibold text-red-500">
@@ -238,15 +300,17 @@ export default function SignupPage() {
               </div>
             ) : null}
 
+            {/* Password */}
             <Field
               label="Mật khẩu"
               required
               icon={<LockIcon />}
               type={showPw ? "text" : "password"}
-              value={pw}
-              onChange={(e) => setPw(e.target.value)}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               placeholder="Nhập mật khẩu"
               autoComplete="new-password"
+              disabled={loading}
               right={
                 <button
                   type="button"
@@ -258,49 +322,59 @@ export default function SignupPage() {
                 </button>
               }
             />
-            {!pwOk && pw ? (
+            {!pwOk && password ? (
               <div className="text-[11px] font-semibold text-red-500">
                 Mật khẩu tối thiểu 6 ký tự.
               </div>
             ) : null}
 
+            {/* Confirm Password */}
             <Field
               label="Xác nhận mật khẩu"
               required
               icon={<LockIcon />}
-              type={showPw2 ? "text" : "password"}
-              value={pw2}
-              onChange={(e) => setPw2(e.target.value)}
+              type={showConfirmPw ? "text" : "password"}
+              value={confirmPw}
+              onChange={(e) => setConfirmPw(e.target.value)}
               placeholder="Nhập lại mật khẩu"
               autoComplete="new-password"
+              disabled={loading}
               right={
                 <button
                   type="button"
-                  onClick={() => setShowPw2((v) => !v)}
+                  onClick={() => setShowConfirmPw((v) => !v)}
                   className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-black/5 text-black/55 hover:bg-black/10"
-                  aria-label={showPw2 ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                  aria-label={showConfirmPw ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
                 >
-                  <EyeIcon open={showPw2} />
+                  <EyeIcon open={showConfirmPw} />
                 </button>
               }
             />
-            {pw2 && !pwMatch ? (
+            {confirmPw && !pwMatch ? (
               <div className="text-[11px] font-semibold text-red-500">
                 Mật khẩu xác nhận không khớp.
               </div>
             ) : null}
 
+            {/* Error Message */}
+            {err ? (
+              <div className="rounded-xl bg-red-50 p-3 text-center text-[12px] font-semibold text-red-600">
+                {err}
+              </div>
+            ) : null}
+
+            {/* Submit Button */}
             <button
               type="submit"
-              disabled={!canSubmit}
+              disabled={!canSubmit || loading}
               className={[
                 "mt-2 w-full rounded-2xl px-4 py-3 text-[13px] font-extrabold shadow-sm transition-colors",
-                canSubmit
+                canSubmit && !loading
                   ? "bg-[color:var(--trust-blue)] text-white hover:brightness-95 active:brightness-90"
-                  : "bg-black/10 text-black/40",
+                  : "bg-black/10 text-black/40 cursor-not-allowed",
               ].join(" ")}
             >
-              Đăng ký
+              {loading ? "Đang tạo tài khoản..." : "Đăng ký"}
             </button>
 
             <div className="mt-3 text-center text-[12px] font-semibold text-black/45">

@@ -1,10 +1,20 @@
-import { useMemo, useState } from "react";
-import { Link, useParams, useNavigate } from "react-router-dom";
-import { EXPERTS } from "../services/experts";
-import type { Expert } from "../types/expert";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { api } from "../services/api";
+import type { AvailabilitySlotDto, ExpertDetailDto } from "../types/api";
 
 function formatVnd(value: number) {
   return `${new Intl.NumberFormat("vi-VN").format(value)}đ`;
+}
+
+function isAbortError(e: unknown) {
+  return (
+    (typeof e === "object" &&
+      e !== null &&
+      "name" in e &&
+      (e as any).name === "AbortError") ||
+    false
+  );
 }
 
 function formatDateVi(date: Date) {
@@ -14,6 +24,20 @@ function formatDateVi(date: Date) {
     month: "numeric",
     year: "numeric",
   }).format(date);
+}
+
+function formatTimeRange(startIso: string, endIso: string) {
+  const s = new Date(startIso);
+  const e = new Date(endIso);
+  const t1 = s.toLocaleTimeString("vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  const t2 = e.toLocaleTimeString("vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  return `${t1} - ${t2}`;
 }
 
 function startOfMonth(d: Date) {
@@ -55,17 +79,17 @@ function VerifiedBadge() {
   );
 }
 
-function Avatar({ expert }: { expert: Expert }) {
-  if (expert.avatarUrl) {
+function Avatar({ expert }: { expert: ExpertDetailDto }) {
+  if (expert.profileImageUrl) {
     return (
       <img
-        src={expert.avatarUrl}
-        alt={`${expert.degreePrefix ?? ""} ${expert.name}`}
+        src={expert.profileImageUrl}
+        alt={expert.fullName}
         className="h-24 w-24 rounded-2xl object-cover ring-1 ring-black/5"
       />
     );
   }
-  const parts = expert.name.trim().split(/\s+/);
+  const parts = expert.fullName.trim().split(/\s+/);
   const initials = (
     (parts[0]?.[0] ?? "") + (parts.at(-1)?.[0] ?? "")
   ).toUpperCase();
@@ -76,25 +100,35 @@ function Avatar({ expert }: { expert: Expert }) {
   );
 }
 
-function CalendarBookingCard({ expert }: { expert: Expert }) {
-  const navigate = useNavigate();
+function CalendarBookingCard({
+  expert,
+  allSlots,
+  onBook,
+  bookingLoading,
+}: {
+  expert: ExpertDetailDto;
+  allSlots: AvailabilitySlotDto[];
+  onBook: (slotId: number) => void;
+  bookingLoading: boolean;
+}) {
   const [monthCursor, setMonthCursor] = useState(() =>
     startOfMonth(new Date())
   );
   const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
-  const [selectedSlot, setSelectedSlot] = useState<string>("");
+  const [selectedAvailabilityId, setSelectedAvailabilityId] = useState<
+    number | null
+  >(null);
 
   const days = useMemo(() => {
     const first = startOfMonth(monthCursor);
     const last = endOfMonth(monthCursor);
 
-    // Monday-first grid (T2..CN)
-    const mondayIndex = (first.getDay() + 6) % 7; // 0..6 where 0=Mon
+    const mondayIndex = (first.getDay() + 6) % 7;
     const start = new Date(first);
     start.setDate(first.getDate() - mondayIndex);
 
     const result: Date[] = [];
-    const totalCells = 42; // 6 weeks
+    const totalCells = 42;
     for (let i = 0; i < totalCells; i++) {
       const d = new Date(start);
       d.setDate(start.getDate() + i);
@@ -103,20 +137,12 @@ function CalendarBookingCard({ expert }: { expert: Expert }) {
     return { first, last, result };
   }, [monthCursor]);
 
-  const slots = useMemo(() => {
-    // mock slots like screenshot
-    return [
-      "09:00 - 10:00",
-      "10:00 - 11:00",
-      "11:00 - 12:00",
-      "14:00 - 15:00",
-      "15:00 - 16:00",
-      "16:00 - 17:00",
-      "17:00 - 18:00",
-      "19:00 - 20:00",
-      "21:00 - 22:00",
-    ];
-  }, []);
+  const availableSlotsForDate = useMemo(() => {
+    return allSlots.filter((s) => {
+      const slotDate = new Date(s.startTime);
+      return isSameDay(slotDate, selectedDate);
+    });
+  }, [allSlots, selectedDate]);
 
   const monthLabel = useMemo(() => {
     return new Intl.DateTimeFormat("vi-VN", {
@@ -124,6 +150,11 @@ function CalendarBookingCard({ expert }: { expert: Expert }) {
       year: "numeric",
     }).format(monthCursor);
   }, [monthCursor]);
+
+  const selectedSlotInfo = useMemo(
+    () => allSlots.find((s) => s.availabilityId === selectedAvailabilityId),
+    [allSlots, selectedAvailabilityId]
+  );
 
   return (
     <aside className="sticky top-20 rounded-2xl bg-[color:var(--trust-blue)]/80 p-5 text-white shadow-[0_10px_30px_rgba(27,73,101,0.18)] ring-1 ring-white/15">
@@ -135,7 +166,6 @@ function CalendarBookingCard({ expert }: { expert: Expert }) {
             type="button"
             className="rounded-lg px-2 py-1 text-white/90 hover:bg-white/10"
             onClick={() => setMonthCursor((m) => addMonths(m, -1))}
-            aria-label="Tháng trước"
           >
             ‹
           </button>
@@ -144,7 +174,6 @@ function CalendarBookingCard({ expert }: { expert: Expert }) {
             type="button"
             className="rounded-lg px-2 py-1 text-white/90 hover:bg-white/10"
             onClick={() => setMonthCursor((m) => addMonths(m, 1))}
-            aria-label="Tháng sau"
           >
             ›
           </button>
@@ -160,16 +189,20 @@ function CalendarBookingCard({ expert }: { expert: Expert }) {
           {days.result.map((d, idx) => {
             const inMonth = d.getMonth() === monthCursor.getMonth();
             const selected = isSameDay(d, selectedDate);
+            const hasSlots = allSlots.some((s) =>
+              isSameDay(new Date(s.startTime), d)
+            );
+
             return (
               <button
                 key={`${d.toISOString()}-${idx}`}
                 type="button"
                 onClick={() => {
                   setSelectedDate(d);
-                  setSelectedSlot("");
+                  setSelectedAvailabilityId(null);
                 }}
                 className={[
-                  "h-8 rounded-lg text-[11px] font-semibold transition-colors",
+                  "h-8 rounded-lg text-[11px] font-semibold transition-colors relative",
                   inMonth ? "text-white" : "text-white/40",
                   selected
                     ? "bg-white text-[color:var(--corporate-blue)]"
@@ -177,23 +210,27 @@ function CalendarBookingCard({ expert }: { expert: Expert }) {
                 ].join(" ")}
               >
                 {d.getDate()}
+                {hasSlots && !selected && (
+                  <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[color:var(--innovation-sky)]" />
+                )}
               </button>
             );
           })}
         </div>
 
         <div className="mt-4 text-[11px] font-semibold text-white/90">
-          Chọn giờ (chỉ hiển thị những khung giờ khả dụng)
+          Chọn giờ ({availableSlotsForDate.length} khung giờ)
         </div>
 
-        <div className="mt-3 grid grid-cols-3 gap-2">
-          {slots.map((s) => {
-            const active = selectedSlot === s;
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          {availableSlotsForDate.map((s) => {
+            const active = selectedAvailabilityId === s.availabilityId;
+            const label = formatTimeRange(s.startTime, s.endTime);
             return (
               <button
-                key={s}
+                key={s.availabilityId}
                 type="button"
-                onClick={() => setSelectedSlot(s)}
+                onClick={() => setSelectedAvailabilityId(s.availabilityId)}
                 className={[
                   "rounded-lg px-2 py-2 text-[10px] font-semibold ring-1 ring-white/15",
                   active
@@ -201,10 +238,15 @@ function CalendarBookingCard({ expert }: { expert: Expert }) {
                     : "bg-white/10 text-white hover:bg-white/15",
                 ].join(" ")}
               >
-                {s}
+                {label}
               </button>
             );
           })}
+          {availableSlotsForDate.length === 0 && (
+            <div className="col-span-2 text-center text-[10px] text-white/50 italic py-2">
+              Không có lịch trống ngày này
+            </div>
+          )}
         </div>
 
         <div className="mt-4 rounded-xl bg-white/10 p-3 ring-1 ring-white/15">
@@ -213,40 +255,33 @@ function CalendarBookingCard({ expert }: { expert: Expert }) {
           </div>
           <div className="mt-1 text-[12px] font-bold">
             {formatDateVi(selectedDate)}
-            {selectedSlot ? ` • ${selectedSlot}` : ""}
+            {selectedSlotInfo
+              ? ` • ${formatTimeRange(
+                  selectedSlotInfo.startTime,
+                  selectedSlotInfo.endTime
+                )}`
+              : ""}
           </div>
           <div className="mt-1 text-[12px] font-semibold text-white/90">
-            {formatVnd(expert.pricePerSessionVnd)}{" "}
-            <span className="text-white/70">/buổi</span>
+            {formatVnd(expert.hourlyRate)}{" "}
+            <span className="text-white/70">/giờ</span>
           </div>
         </div>
 
         <button
           type="button"
-          disabled={!selectedSlot}
+          disabled={!selectedAvailabilityId || bookingLoading}
           onClick={() => {
-            if (!selectedSlot) return;
-            const yyyy = selectedDate.getFullYear();
-            const mm = String(selectedDate.getMonth() + 1).padStart(2, "0");
-            const dd = String(selectedDate.getDate()).padStart(2, "0");
-            const dateIso = `${yyyy}-${mm}-${dd}`;
-
-            const qs = new URLSearchParams({
-              expertId: expert.id,
-              date: dateIso,
-              slot: selectedSlot,
-            });
-
-            navigate(`/thanh-toan?${qs.toString()}`);
+            if (selectedAvailabilityId) onBook(selectedAvailabilityId);
           }}
           className={[
             "mt-4 w-full rounded-xl px-4 py-3 text-[12px] font-bold shadow-sm transition-opacity",
-            selectedSlot
+            selectedAvailabilityId && !bookingLoading
               ? "bg-white text-[color:var(--corporate-blue)]"
-              : "bg-white/50 text-[color:var(--corporate-blue)] opacity-70",
+              : "bg-white/50 text-[color:var(--corporate-blue)] opacity-70 cursor-not-allowed",
           ].join(" ")}
         >
-          Tiếp tục thanh toán
+          {bookingLoading ? "Đang xử lý..." : "Tiếp tục thanh toán"}
         </button>
 
         <div className="mt-2 text-center text-[10px] text-white/70">
@@ -285,14 +320,93 @@ function RatingLine({
 }
 
 export default function ExpertDetailPage() {
-  const { id } = useParams();
-  const expert = useMemo(() => EXPERTS.find((e) => e.id === id), [id]);
+  const nav = useNavigate();
+  const params = useParams();
 
-  if (!expert) {
+  const expertId = useMemo(() => {
+    const raw = params.id;
+    const n = raw ? Number(raw) : NaN;
+    return Number.isFinite(n) ? n : null;
+  }, [params.id]);
+
+  const [expert, setExpert] = useState<ExpertDetailDto | null>(null);
+  const [slots, setSlots] = useState<AvailabilitySlotDto[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [booking, setBooking] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (expertId === null) {
+      setLoading(false);
+      setErr("Đường dẫn không hợp lệ (expertId).");
+      return;
+    }
+
+    const ac = new AbortController();
+
+    (async () => {
+      setErr(null);
+      setLoading(true);
+
+      try {
+        const [detail, av] = await Promise.all([
+          api.experts.getExpertDetail(expertId, { signal: ac.signal }),
+          api.experts.getAvailability(expertId, undefined, {
+            signal: ac.signal,
+          }),
+        ]);
+
+        if (ac.signal.aborted) return;
+
+        setExpert(detail);
+        setSlots(av);
+      } catch (e) {
+        // ignore abort/cancel (dev StrictMode or navigating away)
+        //
+        if (ac.signal.aborted || isAbortError(e)) return;
+
+        setErr("Không tải được dữ liệu chuyên gia.");
+      } finally {
+        if (ac.signal.aborted) return;
+        setLoading(false);
+      }
+    })();
+
+    return () => ac.abort();
+  }, [expertId]);
+
+  async function handleBook(slotId: number) {
+    if (expertId === null) return;
+
+    setBooking(true);
+    setErr(null);
+    try {
+      const res = await api.experts.bookAppointment(expertId, {
+        availabilityId: slotId,
+      });
+      nav(`/thanh-toan?apptId=${res.apptId}`);
+    } catch {
+      alert("Đặt lịch thất bại. Vui lòng đăng nhập và thử lại.");
+    } finally {
+      setBooking(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-[13px] font-semibold text-[color:var(--trust-blue)]">
+          Đang tải dữ liệu...
+        </div>
+      </div>
+    );
+  }
+
+  if (err || !expert) {
     return (
       <div className="rounded-2xl bg-white p-6 ring-1 ring-black/5">
         <div className="text-lg font-bold text-[color:var(--corporate-blue)]">
-          Không tìm thấy chuyên gia
+          {err ?? "Không tìm thấy chuyên gia"}
         </div>
         <Link
           to="/chuyen-gia"
@@ -306,7 +420,6 @@ export default function ExpertDetailPage() {
 
   return (
     <section className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_360px]">
-      {/* Left column */}
       <div className="space-y-5">
         <Link
           to="/chuyen-gia"
@@ -315,7 +428,6 @@ export default function ExpertDetailPage() {
           ← Quay lại danh sách
         </Link>
 
-        {/* Profile summary card */}
         <div className="rounded-2xl bg-white p-5 shadow-[0_10px_30px_rgba(27,73,101,0.10)] ring-1 ring-[color:var(--innovation-sky)]/35">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-start gap-4">
@@ -323,10 +435,9 @@ export default function ExpertDetailPage() {
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <h1 className="text-[16px] font-extrabold text-[color:var(--corporate-blue)]">
-                    {(expert.degreePrefix ? `${expert.degreePrefix} ` : "") +
-                      expert.name}
+                    {expert.fullName}
                   </h1>
-                  {expert.verified ? <VerifiedBadge /> : null}
+                  {expert.isVerified ? <VerifiedBadge /> : null}
                 </div>
 
                 <div className="mt-1 text-[12px] font-semibold text-[color:var(--trust-blue)]">
@@ -335,30 +446,27 @@ export default function ExpertDetailPage() {
 
                 <div className="mt-2">
                   <RatingLine
-                    rating={expert.rating}
-                    reviewsCount={expert.reviewsCount}
+                    rating={expert.avgRating}
+                    reviewsCount={expert.reviewCount}
                   />
                 </div>
 
-                <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] font-semibold">
-                  <span className="rounded-full bg-[color:var(--calm-background)] px-3 py-1 text-[color:var(--corporate-blue)] ring-1 ring-black/5">
-                    {expert.experienceYears
-                      ? `${expert.experienceYears}+ năm kinh nghiệm`
-                      : "Kinh nghiệm"}
-                  </span>
-                  <span className="rounded-full bg-[color:var(--calm-background)] px-3 py-1 text-[color:var(--corporate-blue)] ring-1 ring-black/5">
-                    {expert.languages.join(", ")}
-                  </span>
-                </div>
+                {typeof expert.experienceYears === "number" ? (
+                  <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] font-semibold">
+                    <span className="rounded-full bg-[color:var(--calm-background)] px-3 py-1 text-[color:var(--corporate-blue)] ring-1 ring-black/5">
+                      {expert.experienceYears}+ năm kinh nghiệm
+                    </span>
+                  </div>
+                ) : null}
               </div>
             </div>
 
             <div className="text-left sm:text-right">
               <div className="text-[18px] font-extrabold text-[color:var(--corporate-blue)]">
-                {formatVnd(expert.pricePerSessionVnd)}
+                {formatVnd(expert.hourlyRate)}
                 <span className="text-[12px] font-semibold text-black/45">
                   {" "}
-                  /buổi
+                  /giờ
                 </span>
               </div>
               <div className="mt-2 text-[11px] text-black/45">
@@ -368,76 +476,34 @@ export default function ExpertDetailPage() {
           </div>
         </div>
 
-        {/* About */}
         <div className="rounded-2xl bg-white p-5 ring-1 ring-[color:var(--innovation-sky)]/25">
           <div className="text-[13px] font-bold text-[color:var(--corporate-blue)]">
             Giới thiệu
           </div>
           <p className="mt-2 text-[12px] leading-6 text-black/60">
-            {expert.about ?? "Chưa có nội dung giới thiệu."}
+            {expert.bio || "Chưa có nội dung giới thiệu."}
           </p>
         </div>
 
-        {/* Expertise */}
         <div className="rounded-2xl bg-white p-5 ring-1 ring-[color:var(--innovation-sky)]/25">
           <div className="text-[13px] font-bold text-[color:var(--corporate-blue)]">
-            Chuyên môn
-          </div>
-          <ul className="mt-3 space-y-2 text-[12px] text-black/60">
-            {(expert.expertise?.length
-              ? expert.expertise
-              : ["Chưa cập nhật danh sách chuyên môn."]
-            ).map((x) => (
-              <li key={x} className="flex items-start gap-2">
-                <span className="mt-[6px] h-2 w-2 shrink-0 rounded-full bg-[color:var(--innovation-sky)]" />
-                <span>{x}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Reviews */}
-        <div className="rounded-2xl bg-white p-5 ring-1 ring-[color:var(--innovation-sky)]/25">
-          <div className="text-[13px] font-bold text-[color:var(--corporate-blue)]">
-            Đánh giá từ khách hàng tự buổi tư vấn
+            Đánh giá từ khách hàng
           </div>
 
           <div className="mt-3 space-y-4">
-            {(expert.reviews?.length ? expert.reviews : []).map((r) => (
-              <div
-                key={r.id}
-                className="border-b border-black/5 pb-4 last:border-b-0 last:pb-0"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="text-[12px] font-bold text-[color:var(--corporate-blue)]">
-                    {r.customerName}
-                  </div>
-                  <div className="text-[11px] font-semibold text-black/40">
-                    {r.dateIso}
-                  </div>
-                </div>
-
-                <div className="mt-1 flex items-center gap-1 text-amber-500">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Star key={i} filled={i < r.rating} />
-                  ))}
-                </div>
-
-                <p className="mt-2 text-[12px] leading-6 text-black/60">
-                  {r.comment}
-                </p>
-              </div>
-            ))}
-
-            {!expert.reviews?.length ? (
-              <div className="text-[12px] text-black/45">Chưa có đánh giá.</div>
-            ) : null}
+            <div className="text-[12px] text-black/45">
+              Hiện chưa có API lấy danh sách chi tiết đánh giá.
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Right column */}
-      <CalendarBookingCard expert={expert} />
+      <CalendarBookingCard
+        expert={expert}
+        allSlots={slots}
+        onBook={handleBook}
+        bookingLoading={booking}
+      />
     </section>
   );
 }

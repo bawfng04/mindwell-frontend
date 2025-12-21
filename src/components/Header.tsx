@@ -1,6 +1,7 @@
 import React from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import logo from "../assets/mindwell-bgred.png";
+import { clearAccessToken, getAccessToken } from "../services/token";
 
 // const LogoMark = () => (
 //   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[color:var(--calm-background)] ring-1 ring-black/5">
@@ -77,11 +78,56 @@ const navLinkInactive = "text-[color:var(--corporate-blue)] hover:bg-black/5";
 const navLinkActive = "text-white bg-[color:var(--trust-blue)] shadow-sm";
 
 export default function Header() {
+  const nav = useNavigate();
+
   const [isShowLoginOptions, setIsShowLoginOptions] = React.useState(false);
+  const [isAuthed, setIsAuthed] = React.useState(() =>
+    Boolean(getAccessToken())
+  );
+  const dropdownRef = React.useRef<HTMLDivElement | null>(null);
 
   const handleUserIconClick = () => {
     setIsShowLoginOptions((prev) => !prev);
   };
+
+  React.useEffect(() => {
+    const sync = () => setIsAuthed(Boolean(getAccessToken()));
+    window.addEventListener("mindwell.auth", sync);
+    window.addEventListener("storage", (e) => {
+      if (e.key === "mindwell.accessToken") sync();
+    });
+    return () => {
+      window.removeEventListener("mindwell.auth", sync);
+      window.removeEventListener("storage", sync as any);
+    };
+  }, []);
+
+  React.useEffect(() => {
+    if (!isShowLoginOptions) return;
+    const onMouseDown = (e: MouseEvent) => {
+      const el = dropdownRef.current;
+      if (!el) return;
+      if (e.target instanceof Node && !el.contains(e.target)) {
+        setIsShowLoginOptions(false);
+      }
+    };
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsShowLoginOptions(false);
+    };
+    document.addEventListener("mousedown", onMouseDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onMouseDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [isShowLoginOptions]);
+
+  function logout() {
+    clearAccessToken();
+    setIsShowLoginOptions(false);
+    nav("/dang-nhap");
+  }
 
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-black/5">
@@ -163,29 +209,58 @@ export default function Header() {
 
           <button
             type="button"
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-black/10 bg-white text-[color:var(--corporate-blue)] hover:bg-black/5"
-            aria-label="Tài khoản"
+            className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-black/10 bg-white text-[color:var(--corporate-blue)] hover:bg-black/5"
+            aria-label={isAuthed ? "Tài khoản (đã đăng nhập)" : "Tài khoản"}
             onClick={handleUserIconClick}
           >
             <UserIcon />
+            {isAuthed ? (
+              <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-[color:var(--innovation-sky)] ring-2 ring-white" />
+            ) : null}
           </button>
         </div>
 
         {/* Login options dropdown khi click vô icon user*/}
         {isShowLoginOptions && (
-          <div className="absolute top-16 right-4 w-48 rounded-2xl bg-white shadow-[0_10px_30px_rgba(27,73,101,0.12)] ring-1 ring-black/5">
-            <NavLink
-              to="/dang-nhap"
-              className="block px-4 py-3 text-sm font-medium text-[color:var(--corporate-blue)] hover:bg-black/5"
-            >
-              Đăng nhập
-            </NavLink>
-            <NavLink
-              to="/dang-ky"
-              className="block px-4 py-3 text-sm font-medium text-[color:var(--corporate-blue)] hover:bg-black/5"
-            >
-              Đăng ký
-            </NavLink>
+          <div
+            ref={dropdownRef}
+            className="absolute top-16 right-4 w-56 rounded-2xl bg-white shadow-[0_10px_30px_rgba(27,73,101,0.12)] ring-1 ring-black/5 overflow-hidden"
+          >
+            {!isAuthed ? (
+              <>
+                <NavLink
+                  to="/dang-nhap"
+                  onClick={() => setIsShowLoginOptions(false)}
+                  className="block px-4 py-3 text-sm font-medium text-[color:var(--corporate-blue)] hover:bg-black/5"
+                >
+                  Đăng nhập
+                </NavLink>
+                <NavLink
+                  to="/dang-ky"
+                  onClick={() => setIsShowLoginOptions(false)}
+                  className="block px-4 py-3 text-sm font-medium text-[color:var(--corporate-blue)] hover:bg-black/5"
+                >
+                  Đăng ký
+                </NavLink>
+              </>
+            ) : (
+              <>
+                <NavLink
+                  to="/mindpoints"
+                  onClick={() => setIsShowLoginOptions(false)}
+                  className="block px-4 py-3 text-sm font-medium text-[color:var(--corporate-blue)] hover:bg-black/5"
+                >
+                  MindPoints
+                </NavLink>
+                <button
+                  type="button"
+                  onClick={logout}
+                  className="w-full text-left block px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-50"
+                >
+                  Đăng xuất
+                </button>
+              </>
+            )}
           </div>
         )}
       </div>

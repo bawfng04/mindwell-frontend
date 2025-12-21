@@ -1,28 +1,24 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
-import { EXPERTS } from "../services/experts";
+import { api } from "../services/api";
+import type {
+  AppointmentCheckoutDto,
+  CheckoutOptionsDto,
+  InitiateAppointmentPaymentRequestDto,
+} from "../types/api";
 
-type Platform = "google_meet" | "zoom" | "teams";
-type PaymentMethod = "momo" | "zalopay" | "card";
+// --- HELPERS & UI COMPONENTS ---
 
-function formatVnd(value: number) {
-  return `${new Intl.NumberFormat("vi-VN").format(value)}đ`;
+function formatCurrency(value: number) {
+  // Logic hiển thị: Nếu là Point thì hiện Point, VND thì hiện đ
+  // Ở đây giả sử API trả về Point, nhưng UI format đẹp
+  return new Intl.NumberFormat("vi-VN").format(value);
 }
 
-function parseIsoDate(dateIso: string) {
-  // expects yyyy-mm-dd
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateIso);
-  if (!m) return null;
-  const y = Number(m[1]);
-  const mo = Number(m[2]) - 1;
-  const d = Number(m[3]);
-  const dt = new Date(y, mo, d);
-  return Number.isNaN(dt.getTime()) ? null : dt;
-}
-
-function formatDateLikeDesign(dateIso: string) {
-  const dt = parseIsoDate(dateIso);
-  if (!dt) return "—";
+function formatDateLikeDesign(dateStr: string) {
+  if (!dateStr) return "—";
+  const dt = new Date(dateStr);
+  if (Number.isNaN(dt.getTime())) return dateStr;
 
   const weekdays = [
     "Chủ nhật",
@@ -41,20 +37,25 @@ function formatDateLikeDesign(dateIso: string) {
   return `${wd}, ${day} Tháng ${month}, ${year}`;
 }
 
-function platformLabel(p: Platform) {
-  return p === "google_meet"
-    ? "Google Meet"
-    : p === "zoom"
-    ? "Zoom"
-    : "Microsoft Teams";
+function formatTime(dateStr: string) {
+  if (!dateStr) return "—";
+  const dt = new Date(dateStr);
+  if (Number.isNaN(dt.getTime())) return "";
+  return dt.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
 }
 
-function PlatformIcon({ platform }: { platform: Platform }) {
-  const base =
-    "flex h-10 w-10 items-center justify-center rounded-2xl bg-[color:var(--calm-background)] text-[color:var(--corporate-blue)] ring-1 ring-black/5";
-  const label =
-    platform === "google_meet" ? "G" : platform === "zoom" ? "Z" : "T";
-  return <div className={base}>{label}</div>;
+function PlatformIcon({ name }: { name: string }) {
+  const n = name.toLowerCase();
+  let label = "V";
+  if (n.includes("google") || n.includes("meet")) label = "G";
+  else if (n.includes("zoom")) label = "Z";
+  else if (n.includes("team")) label = "T";
+
+  return (
+    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[color:var(--calm-background)] text-[color:var(--corporate-blue)] ring-1 ring-black/5">
+      {label}
+    </div>
+  );
 }
 
 function RadioDot({ checked }: { checked: boolean }) {
@@ -138,6 +139,7 @@ function RowIcon({
 }: {
   kind: "calendar" | "clock" | "video" | "mail" | "link";
 }) {
+  // Icon paths retained from original
   const icon =
     kind === "calendar" ? (
       <path
@@ -217,36 +219,31 @@ function InfoRow({
 function SuccessModal({
   open,
   onClose,
-  date,
-  slot,
-  platform,
+  checkout,
+  platformName,
+  joinUrl,
 }: {
   open: boolean;
   onClose: () => void;
-  date: string;
-  slot: string;
-  platform: Platform;
+  checkout: AppointmentCheckoutDto | null;
+  platformName: string;
+  joinUrl?: string;
 }) {
   useEffect(() => {
     if (!open) return;
-
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
     document.addEventListener("keydown", onKeyDown);
-
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-
     return () => {
       document.removeEventListener("keydown", onKeyDown);
       document.body.style.overflow = prev;
     };
   }, [open, onClose]);
 
-  if (!open) return null;
-
-  const pl = platformLabel(platform);
+  if (!open || !checkout) return null;
 
   return (
     <div className="fixed inset-0 z-[100]">
@@ -284,10 +281,16 @@ function SuccessModal({
               <InfoRow
                 icon="calendar"
                 label="Ngày hẹn"
-                value={formatDateLikeDesign(date)}
+                value={formatDateLikeDesign(checkout.startTime)}
               />
-              <InfoRow icon="clock" label="Thời gian" value={slot || "—"} />
-              <InfoRow icon="video" label="Nền tảng" value={pl} />
+              <InfoRow
+                icon="clock"
+                label="Thời gian"
+                value={`${formatTime(checkout.startTime)} - ${formatTime(
+                  checkout.endTime
+                )}`}
+              />
+              <InfoRow icon="video" label="Nền tảng" value={platformName} />
             </div>
           </div>
 
@@ -305,18 +308,27 @@ function SuccessModal({
               </div>
             </div>
 
-            <div className="mt-4 flex items-start gap-3">
-              <RowIcon kind="link" />
-              <div>
-                <div className="text-[14px] font-extrabold text-[color:var(--corporate-blue)]">
-                  Link {pl}
-                </div>
-                <div className="mt-1 text-[12px] font-semibold leading-6 text-black/50">
-                  Sẽ được kích hoạt 15 phút trước buổi tư vấn. Vui lòng kiểm tra
-                  email để không bỏ lỡ!
+            {joinUrl && (
+              <div className="mt-4 flex items-start gap-3">
+                <RowIcon kind="link" />
+                <div>
+                  <div className="text-[14px] font-extrabold text-[color:var(--corporate-blue)]">
+                    Link {platformName}
+                  </div>
+                  <div className="mt-1 text-[12px] font-semibold leading-6 text-black/50">
+                    Link:{" "}
+                    <a
+                      href={joinUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-blue-600 hover:underline"
+                    >
+                      Nhấn để tham gia
+                    </a>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
 
           <button
@@ -326,43 +338,167 @@ function SuccessModal({
           >
             Đóng
           </button>
-
-          <div className="mt-4 text-center text-[12px] font-semibold text-black/40">
-            Bạn có thể huỷ hoặc đổi lịch miễn phí trước 24 giờ
-          </div>
         </div>
       </div>
     </div>
   );
 }
 
+// --- MAIN PAGE COMPONENT ---
+
 export default function PaymentPage() {
   const navigate = useNavigate();
   const [sp] = useSearchParams();
+  const apptId = Number(sp.get("apptId"));
 
-  const expertId = sp.get("expertId") ?? "";
-  const date = sp.get("date") ?? ""; // yyyy-mm-dd
-  const slot = sp.get("slot") ?? ""; // "14:00 - 15:00"
+  // API State
+  const [checkout, setCheckout] = useState<AppointmentCheckoutDto | null>(null);
+  const [options, setOptions] = useState<CheckoutOptionsDto | null>(null);
 
-  const expert = useMemo(
-    () => EXPERTS.find((e) => e.id === expertId),
-    [expertId]
-  );
+  // Selection State
+  const [methodKey, setMethodKey] = useState<string>("mindpoints");
+  const [serviceType, setServiceType] = useState<string>("video");
+  const [platformId, setPlatformId] = useState<number | undefined>(undefined);
 
-  const [platform, setPlatform] = useState<Platform>("google_meet");
-  const [method, setMethod] = useState<PaymentMethod>("momo");
-
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
+  // Form State
+  const [contactFullName, setContactFullName] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
   const [agree, setAgree] = useState(true);
 
+  // Status State
+  const [loading, setLoading] = useState(true);
+  const [paying, setPaying] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
   const [successOpen, setSuccessOpen] = useState(false);
+  const [joinUrl, setJoinUrl] = useState<string | undefined>(undefined);
 
-  const price = expert?.pricePerSessionVnd ?? 0;
+  const canPay = useMemo(() => {
+    return Boolean(
+      checkout &&
+        options &&
+        apptId &&
+        platformId &&
+        agree &&
+        contactFullName &&
+        contactEmail &&
+        contactPhone
+    );
+  }, [
+    checkout,
+    options,
+    apptId,
+    platformId,
+    agree,
+    contactFullName,
+    contactEmail,
+    contactPhone,
+  ]);
 
-  const canSubmit =
-    agree && !!fullName && !!email && !!phone && !!expertId && !!date && !!slot;
+  useEffect(() => {
+    const ac = new AbortController();
+    (async () => {
+      setErr(null);
+      setLoading(true);
+      try {
+        const [opt, ck] = await Promise.all([
+          api.checkout.getOptions({ signal: ac.signal }),
+          api.checkout.getAppointmentCheckout(apptId, { signal: ac.signal }),
+        ]);
+        setOptions(opt);
+        setCheckout(ck);
+
+        // Pre-select defaults
+        const firstPlatform = opt.platforms.find((p) => p.isActive);
+        if (firstPlatform) setPlatformId(firstPlatform.platformId);
+
+        if (opt.serviceTypes.length > 0) setServiceType(opt.serviceTypes[0]);
+
+        const firstMethod = opt.paymentMethods.find((m) => m.isActive);
+        if (firstMethod) setMethodKey(firstMethod.methodKey);
+
+        // Pre-fill user data
+        try {
+          const profile = await api.users.me({ signal: ac.signal });
+          setContactFullName(profile.fullName ?? "");
+          setContactEmail(profile.email ?? "");
+          setContactPhone(profile.phoneNumber ?? "");
+        } catch {
+          // not logged in, ignore
+        }
+      } catch {
+        setErr("Không tải được thông tin thanh toán. Vui lòng thử lại.");
+      } finally {
+        setLoading(false);
+      }
+    })();
+    return () => ac.abort();
+  }, [apptId]);
+
+  async function onPay() {
+    if (!canPay) return;
+    setPaying(true);
+    setErr(null);
+    try {
+      const body: InitiateAppointmentPaymentRequestDto = {
+        methodKey,
+        platformId,
+        serviceType,
+        contactFullName: contactFullName || undefined,
+        contactEmail: contactEmail || undefined,
+        contactPhone: contactPhone || undefined,
+      };
+
+      const res = await api.checkout.payAppointment(apptId, body);
+
+      if (res.redirectUrl) {
+        window.location.href = res.redirectUrl;
+        return;
+      }
+
+      // If no redirect (e.g. MindPoints), verify success
+      try {
+        const conf = await api.checkout.confirmation(apptId);
+        setJoinUrl(conf.meetingJoinUrl);
+        setSuccessOpen(true);
+      } catch {
+        // Fallback if confirmation fails fetching
+        setSuccessOpen(true);
+      }
+    } catch {
+      setErr("Thanh toán thất bại. Vui lòng kiểm tra lại số dư hoặc kết nối.");
+    } finally {
+      setPaying(false);
+    }
+  }
+
+  if (!apptId)
+    return <div className="p-10 text-center">Đường dẫn không hợp lệ.</div>;
+  if (loading)
+    return (
+      <div className="p-10 text-center text-[color:var(--trust-blue)] font-semibold">
+        Đang tải thông tin thanh toán...
+      </div>
+    );
+  if (err || !checkout || !options) {
+    return (
+      <div className="p-10 text-center">
+        <div className="text-red-500 font-bold mb-2">
+          {err || "Lỗi dữ liệu"}
+        </div>
+        <Link
+          to="/chuyen-gia"
+          className="text-[color:var(--trust-blue)] hover:underline"
+        >
+          Quay lại danh sách
+        </Link>
+      </div>
+    );
+  }
+
+  const selectedPlatformName =
+    options.platforms.find((p) => p.platformId === platformId)?.displayName ||
+    "Video Call";
 
   return (
     <div className="pb-28">
@@ -375,14 +511,12 @@ export default function PaymentPage() {
         <h1 className="mt-4 text-2xl font-extrabold text-[color:var(--corporate-blue)]">
           Đặt lịch với{" "}
           <span className="text-[color:var(--trust-blue)]">
-            {expert
-              ? `${expert.degreePrefix ?? ""} ${expert.name}`
-              : "chuyên gia"}
+            {checkout.expertName}
           </span>
         </h1>
 
         <p className="mt-2 text-[12px] font-semibold text-black/50">
-          Chọn thời gian, nền tảng và hoàn tất thanh toán
+          Chọn nền tảng và hoàn tất thanh toán
         </p>
       </div>
 
@@ -391,70 +525,57 @@ export default function PaymentPage() {
         <div className="space-y-6">
           <div>
             <Link
-              to={expertId ? `/chuyen-gia/${expertId}` : "/chuyen-gia"}
+              to={`/chuyen-gia/${checkout.expertId}`}
               className="inline-flex items-center gap-2 rounded-full border border-[color:var(--innovation-sky)]/45 bg-white px-4 py-2 text-[12px] font-semibold text-[color:var(--corporate-blue)] hover:bg-black/5"
             >
               ‹ Quay lại
             </Link>
           </div>
 
+          {/* Platform Selection */}
           <Card
             title="Chọn nền tảng tư vấn"
             right={
               <div className="text-[11px] font-semibold text-black/45">
-                Link tham gia sẽ được gửi qua email từ 1–5 phút
+                Link tham gia sẽ được gửi qua email
               </div>
             }
           >
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-              {(
-                [
-                  {
-                    key: "google_meet",
-                    name: "Google Meet",
-                    sub: "Ổn định, dễ sử dụng",
-                  },
-                  { key: "zoom", name: "Zoom", sub: "Phổ biến, chất lượng" },
-                  {
-                    key: "teams",
-                    name: "Microsoft Teams",
-                    sub: "Bảo mật, chuyên nghiệp",
-                  },
-                ] as const
-              ).map((p) => {
-                const checked = platform === p.key;
-                return (
-                  <button
-                    key={p.key}
-                    type="button"
-                    onClick={() => setPlatform(p.key)}
-                    className={[
-                      "flex items-center gap-3 rounded-2xl border p-4 text-left transition-colors",
-                      checked
-                        ? "border-[color:var(--trust-blue)] bg-[color:var(--trust-blue)]/10"
-                        : "border-[color:var(--innovation-sky)]/35 bg-white hover:bg-black/5",
-                    ].join(" ")}
-                  >
-                    <PlatformIcon platform={p.key} />
-                    <div className="min-w-0">
-                      <div className="text-[12px] font-extrabold text-[color:var(--corporate-blue)]">
-                        {p.name}
-                      </div>
-                      <div className="mt-1 text-[11px] font-semibold text-black/45">
-                        {p.sub}
-                      </div>
-                      {checked ? (
-                        <div className="mt-2 text-[11px] font-extrabold text-[color:var(--trust-blue)]">
-                          ✓ Đã chọn
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              {options.platforms
+                .filter((p) => p.isActive)
+                .map((p) => {
+                  const checked = platformId === p.platformId;
+                  return (
+                    <button
+                      key={p.platformId}
+                      type="button"
+                      onClick={() => setPlatformId(p.platformId)}
+                      className={[
+                        "flex items-center gap-3 rounded-2xl border p-4 text-left transition-colors",
+                        checked
+                          ? "border-[color:var(--trust-blue)] bg-[color:var(--trust-blue)]/10"
+                          : "border-[color:var(--innovation-sky)]/35 bg-white hover:bg-black/5",
+                      ].join(" ")}
+                    >
+                      <PlatformIcon name={p.displayName} />
+                      <div className="min-w-0">
+                        <div className="text-[12px] font-extrabold text-[color:var(--corporate-blue)]">
+                          {p.displayName}
                         </div>
-                      ) : null}
-                    </div>
-                  </button>
-                );
-              })}
+                        {checked ? (
+                          <div className="mt-1 text-[11px] font-extrabold text-[color:var(--trust-blue)]">
+                            ✓ Đã chọn
+                          </div>
+                        ) : null}
+                      </div>
+                    </button>
+                  );
+                })}
             </div>
           </Card>
 
+          {/* Contact Info */}
           <Card title="Thông tin liên hệ">
             <div className="grid grid-cols-1 gap-4">
               <label className="space-y-1">
@@ -462,8 +583,8 @@ export default function PaymentPage() {
                   Họ và tên <span className="text-red-500">*</span>
                 </div>
                 <input
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
+                  value={contactFullName}
+                  onChange={(e) => setContactFullName(e.target.value)}
                   placeholder="Nhập họ và tên của bạn"
                   className="h-10 w-full rounded-xl border border-[color:var(--innovation-sky)]/45 bg-[color:var(--calm-background)] px-3 text-[13px] text-[color:var(--corporate-blue)] outline-none placeholder:text-black/35 focus:border-[color:var(--innovation-sky)]"
                 />
@@ -474,8 +595,8 @@ export default function PaymentPage() {
                   Email <span className="text-red-500">*</span>
                 </div>
                 <input
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  value={contactEmail}
+                  onChange={(e) => setContactEmail(e.target.value)}
                   placeholder="email@example.com"
                   className="h-10 w-full rounded-xl border border-[color:var(--innovation-sky)]/45 bg-[color:var(--calm-background)] px-3 text-[13px] text-[color:var(--corporate-blue)] outline-none placeholder:text-black/35 focus:border-[color:var(--innovation-sky)]"
                 />
@@ -486,8 +607,8 @@ export default function PaymentPage() {
                   Số điện thoại <span className="text-red-500">*</span>
                 </div>
                 <input
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  value={contactPhone}
+                  onChange={(e) => setContactPhone(e.target.value)}
                   placeholder="0912345678"
                   className="h-10 w-full rounded-xl border border-[color:var(--innovation-sky)]/45 bg-[color:var(--calm-background)] px-3 text-[13px] text-[color:var(--corporate-blue)] outline-none placeholder:text-black/35 focus:border-[color:var(--innovation-sky)]"
                 />
@@ -495,47 +616,47 @@ export default function PaymentPage() {
             </div>
           </Card>
 
+          {/* Payment Method */}
           <Card
             title="Phương thức thanh toán"
             right={
-              <span className="rounded-full bg-[color:var(--calm-background)] px-3 py-1 text-[10px] font-extrabold text-[color:var(--trust-blue)] ring-1 ring-black/5">
-                Phổ biến
-              </span>
+              <div className="text-[11px] font-semibold text-black/45">
+                Số dư:{" "}
+                <span className="text-[color:var(--corporate-blue)] font-bold">
+                  {formatCurrency(checkout.userMindpointsBalance)} Point
+                </span>
+              </div>
             }
           >
             <div className="space-y-3">
-              {(
-                [
-                  { key: "momo", label: "Ví MoMo" },
-                  { key: "zalopay", label: "ZaloPay" },
-                  { key: "card", label: "Thẻ tín dụng / Ghi nợ" },
-                ] as const
-              ).map((m) => {
-                const checked = method === m.key;
-                return (
-                  <button
-                    key={m.key}
-                    type="button"
-                    onClick={() => setMethod(m.key)}
-                    className={[
-                      "flex w-full items-center justify-between rounded-2xl border px-4 py-4 text-left",
-                      checked
-                        ? "border-[color:var(--trust-blue)] bg-[color:var(--calm-background)]"
-                        : "border-[color:var(--innovation-sky)]/35 bg-white hover:bg-black/5",
-                    ].join(" ")}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[color:var(--calm-background)] text-[color:var(--corporate-blue)] ring-1 ring-black/5">
-                        $
+              {options.paymentMethods
+                .filter((m) => m.isActive)
+                .map((m) => {
+                  const checked = methodKey === m.methodKey;
+                  return (
+                    <button
+                      key={m.methodKey}
+                      type="button"
+                      onClick={() => setMethodKey(m.methodKey)}
+                      className={[
+                        "flex w-full items-center justify-between rounded-2xl border px-4 py-4 text-left",
+                        checked
+                          ? "border-[color:var(--trust-blue)] bg-[color:var(--calm-background)]"
+                          : "border-[color:var(--innovation-sky)]/35 bg-white hover:bg-black/5",
+                      ].join(" ")}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[color:var(--calm-background)] text-[color:var(--corporate-blue)] ring-1 ring-black/5">
+                          $
+                        </div>
+                        <div className="text-[12px] font-extrabold text-[color:var(--corporate-blue)]">
+                          {m.displayName}
+                        </div>
                       </div>
-                      <div className="text-[12px] font-extrabold text-[color:var(--corporate-blue)]">
-                        {m.label}
-                      </div>
-                    </div>
-                    <RadioDot checked={checked} />
-                  </button>
-                );
-              })}
+                      <RadioDot checked={checked} />
+                    </button>
+                  );
+                })}
             </div>
           </Card>
 
@@ -571,22 +692,17 @@ export default function PaymentPage() {
           <div className="mt-4 rounded-2xl border border-[color:var(--innovation-sky)]/25 p-4">
             <div className="flex items-center gap-3">
               <div className="h-12 w-12 overflow-hidden rounded-2xl bg-[color:var(--calm-background)] ring-1 ring-black/5">
-                {expert?.avatarUrl ? (
-                  <img
-                    src={expert.avatarUrl}
-                    alt={expert.name}
-                    className="h-full w-full object-cover"
-                  />
-                ) : null}
+                {/* Fallback avatar logic */}
+                <div className="flex h-full w-full items-center justify-center font-bold text-[color:var(--corporate-blue)]">
+                  {checkout.expertName.charAt(0)}
+                </div>
               </div>
               <div className="min-w-0">
                 <div className="truncate text-[12px] font-extrabold text-[color:var(--corporate-blue)]">
-                  {expert
-                    ? `${expert.degreePrefix ?? ""} ${expert.name}`
-                    : "Chuyên gia"}
+                  {checkout.expertName}
                 </div>
                 <div className="truncate text-[11px] font-semibold text-[color:var(--trust-blue)]">
-                  {expert?.title ?? ""}
+                  Chuyên gia
                 </div>
               </div>
             </div>
@@ -595,25 +711,25 @@ export default function PaymentPage() {
               <div className="flex items-center justify-between">
                 <span>Nền tảng</span>
                 <span className="text-[color:var(--corporate-blue)]">
-                  {platform === "google_meet"
-                    ? "Google Meet"
-                    : platform === "zoom"
-                    ? "Zoom"
-                    : "Microsoft Teams"}
+                  {selectedPlatformName}
                 </span>
               </div>
 
               <div className="flex items-center justify-between">
                 <span>Thời gian</span>
                 <span className="text-[color:var(--corporate-blue)]">
-                  {date || "—"} {slot ? `• ${slot}` : ""}
+                  {formatDateLikeDesign(checkout.startTime)}
                 </span>
               </div>
+              <div className="text-right text-[color:var(--corporate-blue)]">
+                {formatTime(checkout.startTime)} -{" "}
+                {formatTime(checkout.endTime)}
+              </div>
 
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between pt-2">
                 <span>Phí tư vấn</span>
                 <span className="text-[color:var(--corporate-blue)]">
-                  {formatVnd(price)}
+                  {formatCurrency(checkout.totalAmountPoints)} Point
                 </span>
               </div>
             </div>
@@ -622,22 +738,13 @@ export default function PaymentPage() {
 
             <div className="flex items-end justify-between">
               <div className="text-[11px] font-semibold text-black/45">
-                Tổng cộng
-                <div className="text-[10px] text-black/35">
-                  (chưa áp dụng voucher)
-                </div>
+                Tổng thanh toán
               </div>
               <div className="text-[20px] font-extrabold text-[color:var(--corporate-blue)]">
-                {formatVnd(price)}
+                {formatCurrency(checkout.totalAmountPoints)}{" "}
+                <span className="text-sm">Point</span>
               </div>
             </div>
-
-            <button
-              type="button"
-              className="mt-4 w-full rounded-xl bg-[color:var(--trust-blue)] px-4 py-3 text-[12px] font-extrabold text-white hover:brightness-95 active:brightness-90"
-            >
-              Áp dụng voucher
-            </button>
 
             <div className="mt-4 rounded-2xl bg-[color:var(--calm-background)] p-4 ring-1 ring-black/5">
               <div className="text-[12px] font-extrabold text-[color:var(--corporate-blue)]">
@@ -650,43 +757,37 @@ export default function PaymentPage() {
               </ul>
             </div>
 
-            <div className="mt-4 rounded-2xl border border-[color:var(--innovation-sky)]/25 p-4 text-[11px] font-semibold text-black/55">
-              Thông tin thanh toán được mã hoá và bảo mật theo tiêu chuẩn quốc
-              tế.
-            </div>
+            {err && (
+              <div className="mt-4 rounded-xl bg-red-50 p-3 text-[11px] font-semibold text-red-600 text-center">
+                {err}
+              </div>
+            )}
           </div>
         </aside>
       </div>
 
       {/* Bottom fixed confirm bar */}
-      <div className="fixed bottom-0 left-0 right-0 border-t border-black/5 bg-white/95 backdrop-blur">
+      <div className="fixed bottom-0 left-0 right-0 border-t border-black/5 bg-white/95 backdrop-blur z-50">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4">
-          <div className="text-[12px] font-semibold text-black/50">
-            {expert
-              ? `${expert.degreePrefix ?? ""} ${expert.name}`
-              : "Chuyên gia"}{" "}
-            • {date || "—"} {slot ? `• ${slot}` : ""} •{" "}
+          <div className="hidden sm:block text-[12px] font-semibold text-black/50">
+            {checkout.expertName} • {formatDateLikeDesign(checkout.startTime)} •{" "}
             <span className="font-extrabold text-[color:var(--corporate-blue)]">
-              {formatVnd(price)}
+              {formatCurrency(checkout.totalAmountPoints)} Point
             </span>
           </div>
 
           <button
             type="button"
-            disabled={!canSubmit}
-            onClick={() => {
-              if (!canSubmit) return;
-              // todo: call API create booking + payment
-              setSuccessOpen(true);
-            }}
+            disabled={!canPay || paying}
+            onClick={onPay}
             className={[
-              "rounded-2xl px-6 py-3 text-[12px] font-extrabold shadow-sm",
-              !canSubmit
-                ? "bg-black/10 text-black/40"
+              "rounded-2xl px-6 py-3 text-[12px] font-extrabold shadow-sm ml-auto sm:ml-0",
+              !canPay || paying
+                ? "bg-black/10 text-black/40 cursor-not-allowed"
                 : "bg-[color:var(--trust-blue)] text-white hover:brightness-95 active:brightness-90",
             ].join(" ")}
           >
-            Xác nhận &amp; Thanh toán
+            {paying ? "Đang xử lý..." : "Xác nhận & Thanh toán"}
           </button>
         </div>
       </div>
@@ -697,9 +798,9 @@ export default function PaymentPage() {
           setSuccessOpen(false);
           navigate("/");
         }}
-        date={date}
-        slot={slot}
-        platform={platform}
+        checkout={checkout}
+        platformName={selectedPlatformName}
+        joinUrl={joinUrl}
       />
     </div>
   );
