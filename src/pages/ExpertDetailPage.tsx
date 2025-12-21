@@ -205,7 +205,11 @@ function CalendarBookingCard({
                   "h-8 rounded-lg text-[11px] font-semibold transition-colors relative",
                   inMonth ? "text-white" : "text-white/40",
                   selected
-                    ? "bg-white text-[color:var(--corporate-blue)]"
+                    ? "bg-white !text-black/80 font-bold"
+                    : hasSlots
+                    ? "bg-white/10 hover:bg-white/15"
+                    : inMonth
+                    ? "bg-red-500/15 hover:bg-red-500/20 ring-1 ring-red-300/30"
                     : "bg-white/10 hover:bg-white/15",
                 ].join(" ")}
               >
@@ -223,29 +227,35 @@ function CalendarBookingCard({
         </div>
 
         <div className="mt-3 grid grid-cols-2 gap-2">
-          {availableSlotsForDate.map((s) => {
-            const active = selectedAvailabilityId === s.availabilityId;
-            const label = formatTimeRange(s.startTime, s.endTime);
-            return (
-              <button
-                key={s.availabilityId}
-                type="button"
-                onClick={() => setSelectedAvailabilityId(s.availabilityId)}
-                className={[
-                  "rounded-lg px-2 py-2 text-[10px] font-semibold ring-1 ring-white/15",
-                  active
-                    ? "bg-white text-[color:var(--corporate-blue)]"
-                    : "bg-white/10 text-white hover:bg-white/15",
-                ].join(" ")}
-              >
-                {label}
-              </button>
-            );
-          })}
-          {availableSlotsForDate.length === 0 && (
-            <div className="col-span-2 text-center text-[10px] text-white/50 italic py-2">
+          {availableSlotsForDate.length === 0 ? (
+            <button
+              type="button"
+              disabled
+              className="col-span-2 rounded-lg px-2 py-2 text-[10px] font-semibold ring-1 ring-red-300 bg-red-50 text-red-700 opacity-80 cursor-not-allowed"
+            >
               Không có lịch trống ngày này
-            </div>
+            </button>
+          ) : (
+            availableSlotsForDate.map((s) => {
+              const active = selectedAvailabilityId === s.availabilityId;
+              const label = formatTimeRange(s.startTime, s.endTime);
+
+              return (
+                <button
+                  key={s.availabilityId}
+                  type="button"
+                  onClick={() => setSelectedAvailabilityId(s.availabilityId)}
+                  className={[
+                    "rounded-lg px-2 py-2 text-[10px] font-semibold ring-1 ring-white/15",
+                    active
+                      ? "bg-white text-[color:var(--corporate-blue)]"
+                      : "bg-white/10 text-white hover:bg-white/15",
+                  ].join(" ")}
+                >
+                  {label}
+                </button>
+              );
+            })
           )}
         </div>
 
