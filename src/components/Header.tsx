@@ -1,25 +1,26 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
+import logo from "../assets/mindwell-bgred.png";
 
-const LogoMark = () => (
-  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[color:var(--calm-background)] ring-1 ring-black/5">
-    <svg width="18" height="22" viewBox="0 0 18 22" aria-hidden="true">
-      <path
-        d="M9 1C6.5 4.6 3 8.4 3 12.5 3 16.6 5.7 20 9 20s6-3.4 6-7.5C15 8.4 11.5 4.6 9 1Z"
-        fill="none"
-        stroke="var(--trust-blue)"
-        strokeWidth="1.8"
-      />
-      <path
-        d="M6.2 13.2c.2 1.9 1.5 3.3 3.4 3.6"
-        fill="none"
-        stroke="var(--innovation-sky)"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
-    </svg>
-  </div>
-);
+// const LogoMark = () => (
+//   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[color:var(--calm-background)] ring-1 ring-black/5">
+//     <svg width="18" height="22" viewBox="0 0 18 22" aria-hidden="true">
+//       <path
+//         d="M9 1C6.5 4.6 3 8.4 3 12.5 3 16.6 5.7 20 9 20s6-3.4 6-7.5C15 8.4 11.5 4.6 9 1Z"
+//         fill="none"
+//         stroke="var(--trust-blue)"
+//         strokeWidth="1.8"
+//       />
+//       <path
+//         d="M6.2 13.2c.2 1.9 1.5 3.3 3.4 3.6"
+//         fill="none"
+//         stroke="var(--innovation-sky)"
+//         strokeWidth="1.8"
+//         strokeLinecap="round"
+//       />
+//     </svg>
+//   </div>
+// );
 
 const QuizIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
@@ -87,7 +88,11 @@ export default function Header() {
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
         {/* Left: Brand */}
         <div className="flex items-center gap-3">
-          <LogoMark />
+          <img
+            src={logo}
+            alt="MindWell Logo"
+            className="h-10 w-10 object-contain"
+          />
           <div className="leading-tight">
             <div className="text-lg font-semibold tracking-tight text-[color:var(--corporate-blue)]">
               MindWell
