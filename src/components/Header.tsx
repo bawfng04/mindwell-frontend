@@ -1,3 +1,4 @@
+import React from "react";
 import { NavLink } from "react-router-dom";
 
 const LogoMark = () => (
@@ -75,6 +76,12 @@ const navLinkInactive = "text-[color:var(--corporate-blue)] hover:bg-black/5";
 const navLinkActive = "text-white bg-[color:var(--trust-blue)] shadow-sm";
 
 export default function Header() {
+  const [isShowLoginOptions, setIsShowLoginOptions] = React.useState(false);
+
+  const handleUserIconClick = () => {
+    setIsShowLoginOptions((prev) => !prev);
+  };
+
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-black/5">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
@@ -153,10 +160,29 @@ export default function Header() {
             type="button"
             className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-black/10 bg-white text-[color:var(--corporate-blue)] hover:bg-black/5"
             aria-label="Tài khoản"
+            onClick={handleUserIconClick}
           >
             <UserIcon />
           </button>
         </div>
+
+        {/* Login options dropdown khi click vô icon user*/}
+        {isShowLoginOptions && (
+          <div className="absolute top-16 right-4 w-48 rounded-2xl bg-white shadow-[0_10px_30px_rgba(27,73,101,0.12)] ring-1 ring-black/5">
+            <NavLink
+              to="/dang-nhap"
+              className="block px-4 py-3 text-sm font-medium text-[color:var(--corporate-blue)] hover:bg-black/5"
+            >
+              Đăng nhập
+            </NavLink>
+            <NavLink
+              to="/dang-ky"
+              className="block px-4 py-3 text-sm font-medium text-[color:var(--corporate-blue)] hover:bg-black/5"
+            >
+              Đăng ký
+            </NavLink>
+          </div>
+        )}
       </div>
 
       {/* Mobile nav */}
