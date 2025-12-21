@@ -8,13 +8,13 @@ function formatVnd(value: number) {
   return `${new Intl.NumberFormat("vi-VN").format(value)}đ`;
 }
 
-function Badge({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-2 text-[12px] font-extrabold text-white ring-1 ring-white/25">
-      {children}
-    </span>
-  );
-}
+// function Badge({ children }: { children: React.ReactNode }) {
+//   return (
+//     <span className="inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-2 text-[12px] font-extrabold text-white ring-1 ring-white/25">
+//       {children}
+//     </span>
+//   );
+// }
 
 function IconBox({ label }: { label: string }) {
   return (
