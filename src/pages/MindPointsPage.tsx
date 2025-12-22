@@ -3,7 +3,7 @@ import SubscriptionPlansSection from "./SubscriptionPlanesSelection";
 // import kh from "../assets/kh.png";
 
 type PointsPack = { points: number; priceVnd: number; tag?: string };
-type PlanKey = "free" | "premium" | "platinum";
+// type PlanKey = "free" | "premium" | "platinum";
 
 function formatVnd(value: number) {
   return `${new Intl.NumberFormat("vi-VN").format(value)}đ`;
