@@ -12,7 +12,7 @@ import LoginPage from "./pages/LoginPage.tsx";
 import NotFound from "./components/NotFound.tsx";
 import AppointmentsPage from "./pages/AppointmentsPage.tsx";
 import SubscriptionResultPage from "./pages/SubcriptionResultPage.tsx";
-import SubscriptionsPage from "./pages/SubscriptionsPage.tsx";
+// import SubscriptionsPage from "./pages/SubscriptionsPage.tsx";
 
 function App() {
   return (
@@ -26,7 +26,7 @@ function App() {
         <Route path="/blog" element={<BlogPage />} />
         <Route path="/blog/:id" element={<BlogDetailPage />} />
         <Route path="/lich-hen" element={<AppointmentsPage />} />
-        <Route path="/goi-thanh-vien" element={<SubscriptionsPage />} />
+        {/* <Route path="/goi-thanh-vien" element={<SubscriptionsPage />} /> */}
         <Route
           path="/goi-thanh-vien/ket-qua"
           element={<SubscriptionResultPage />}

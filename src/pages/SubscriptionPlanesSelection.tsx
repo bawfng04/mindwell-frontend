@@ -18,7 +18,12 @@ function formatVnd(value: number) {
 }
 
 function isInternalApiRedirect(url: string) {
-  return url.startsWith("/api/") || url.includes("localhost:5173/api/");
+
+  return (
+    url.startsWith("/api/") ||
+    url.includes("localhost:5173/api/") ||
+    url.includes("localhost:8000/api/")
+  );
 }
 
 export default function SubscriptionPlansSection() {

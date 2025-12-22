@@ -88,6 +88,7 @@ export default function SubscriptionsPage() {
     } catch (e) {
       const status = (e as any)?.status;
       if (status === 401) setErr("Bạn cần đăng nhập để mua gói.");
+      else if (status === 409) setErr("Bạn đã có gói thành viên hiện tại.");
       else setErr("Không thể tạo thanh toán. Vui lòng thử lại.");
     } finally {
       setPayingSubId(null);
@@ -205,7 +206,7 @@ export default function SubscriptionsPage() {
                   : "bg-[color:var(--trust-blue)] text-white hover:brightness-95 active:brightness-90",
               ].join(" ")}
             >
-              {payingSubId === p.subId ? "Đang xử lý..." : "Mua gói"}
+              {payingSubId === p.subId ? "Đang xử lý..." : "Mua gói 2"}
             </button>
           </article>
         ))}
