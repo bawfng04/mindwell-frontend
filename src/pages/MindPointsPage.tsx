@@ -25,53 +25,53 @@ function IconBox({ label }: { label: string }) {
   );
 }
 
-function Check({ className = "" }: { className?: string }) {
-  return (
-    <span
-      className={[
-        "inline-flex h-5 w-5 items-center justify-center rounded-full bg-white/15 ring-1 ring-white/20",
-        className,
-      ].join(" ")}
-      aria-hidden="true"
-    >
-      <svg width="14" height="14" viewBox="0 0 24 24">
-        <path
-          d="M7.5 12.3 10.4 15l6.3-6.4"
-          fill="none"
-          stroke="white"
-          strokeWidth="2.2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-    </span>
-  );
-}
+// function Check({ className = "" }: { className?: string }) {
+//   return (
+//     <span
+//       className={[
+//         "inline-flex h-5 w-5 items-center justify-center rounded-full bg-white/15 ring-1 ring-white/20",
+//         className,
+//       ].join(" ")}
+//       aria-hidden="true"
+//     >
+//       <svg width="14" height="14" viewBox="0 0 24 24">
+//         <path
+//           d="M7.5 12.3 10.4 15l6.3-6.4"
+//           fill="none"
+//           stroke="white"
+//           strokeWidth="2.2"
+//           strokeLinecap="round"
+//           strokeLinejoin="round"
+//         />
+//       </svg>
+//     </span>
+//   );
+// }
 
-function PlanCheck({ dark }: { dark?: boolean }) {
-  return (
-    <span
-      className={[
-        "inline-flex h-5 w-5 items-center justify-center rounded-full ring-1",
-        dark
-          ? "bg-[color:var(--trust-blue)]/12 ring-[color:var(--trust-blue)]/25"
-          : "bg-white/15 ring-white/20",
-      ].join(" ")}
-      aria-hidden="true"
-    >
-      <svg width="14" height="14" viewBox="0 0 24 24">
-        <path
-          d="M7.5 12.3 10.4 15l6.3-6.4"
-          fill="none"
-          stroke={dark ? "var(--trust-blue)" : "white"}
-          strokeWidth="2.2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-    </span>
-  );
-}
+// function PlanCheck({ dark }: { dark?: boolean }) {
+//   return (
+//     <span
+//       className={[
+//         "inline-flex h-5 w-5 items-center justify-center rounded-full ring-1",
+//         dark
+//           ? "bg-[color:var(--trust-blue)]/12 ring-[color:var(--trust-blue)]/25"
+//           : "bg-white/15 ring-white/20",
+//       ].join(" ")}
+//       aria-hidden="true"
+//     >
+//       <svg width="14" height="14" viewBox="0 0 24 24">
+//         <path
+//           d="M7.5 12.3 10.4 15l6.3-6.4"
+//           fill="none"
+//           stroke={dark ? "var(--trust-blue)" : "white"}
+//           strokeWidth="2.2"
+//           strokeLinecap="round"
+//           strokeLinejoin="round"
+//         />
+//       </svg>
+//     </span>
+//   );
+// }
 
 export default function MindPointsPage() {
   const packs: PointsPack[] = useMemo(
@@ -85,7 +85,7 @@ export default function MindPointsPage() {
   );
 
   const [selectedPack, setSelectedPack] = useState<number>(500);
-  const [selectedPlan, setSelectedPlan] = useState<PlanKey>("premium");
+  // const [selectedPlan, setSelectedPlan] = useState<PlanKey>("premium");
 
   return (
     <div className="space-y-6">
