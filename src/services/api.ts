@@ -21,6 +21,11 @@ import type {
   BlogCategoryDto,
   BlogPostDetailDto,
   BlogPostListItemDto,
+  SubscriptionPlanDto,
+  MySubscriptionDto,
+  SubscriptionConfirmationDto,
+  InitiateSubscriptionPaymentRequestDto,
+  InitiateSubscriptionPaymentResponseDto,
   // AppointmentDto,
 } from "../types/api";
 
@@ -242,6 +247,45 @@ export const api = {
           limit: query?.limit ?? 3,
         }),
         { signal: opts?.signal }
+      );
+    },
+  },
+  subscriptions: {
+    listPlans(opts?: { signal?: AbortSignal }) {
+      return httpJson<SubscriptionPlanDto[]>(
+        buildUrl("/api/v1/subscriptions/plans"),
+        { method: "GET", signal: opts?.signal }
+      );
+    },
+
+    my(opts?: { signal?: AbortSignal }) {
+      return httpJson<MySubscriptionDto>(buildUrl("/api/v1/subscriptions/my"), {
+        method: "GET",
+        signal: opts?.signal,
+        headers: withAuth(),
+      });
+    },
+
+    confirmation(paymentId: number, opts?: { signal?: AbortSignal }) {
+      return httpJson<SubscriptionConfirmationDto>(
+        buildUrl("/api/v1/subscriptions/confirmation", { paymentId }),
+        { method: "GET", signal: opts?.signal, headers: withAuth() }
+      );
+    },
+
+    pay(
+      subId: number,
+      body: InitiateSubscriptionPaymentRequestDto,
+      opts?: { signal?: AbortSignal }
+    ) {
+      return httpJson<InitiateSubscriptionPaymentResponseDto>(
+        buildUrl(`/api/v1/subscriptions/${subId}/payments`),
+        {
+          method: "POST",
+          body: JSON.stringify(body),
+          signal: opts?.signal,
+          headers: withAuth({ "Content-Type": "application/json" }),
+        }
       );
     },
   },

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import SubscriptionPlansSection from "./SubscriptionPlanesSelection";
 // import kh from "../assets/kh.png";
 
 type PointsPack = { points: number; priceVnd: number; tag?: string };
@@ -259,10 +260,10 @@ export default function MindPointsPage() {
           Giảm giá và ưu đãi theo tháng, dùng kèm với MindPoints
         </p>
       </div>
-
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-        {/* Free */}
-        <div className="rounded-3xl bg-white p-6 shadow-[0_10px_30px_rgba(27,73,101,0.10)] ring-1 ring-[color:var(--innovation-sky)]/30">
+      <SubscriptionPlansSection />
+      {/* <div className="grid grid-cols-1 gap-5 md:grid-cols-3"> */}
+      {/* Free */}
+      {/* <div className="rounded-3xl bg-white p-6 shadow-[0_10px_30px_rgba(27,73,101,0.10)] ring-1 ring-[color:var(--innovation-sky)]/30">
           <div className="text-[12px] font-extrabold text-[color:var(--corporate-blue)]">
             Free
           </div>
@@ -300,10 +301,10 @@ export default function MindPointsPage() {
           >
             Miễn phí
           </button>
-        </div>
+        </div> */}
 
-        {/* Premium (highlight) */}
-        <div className="relative overflow-hidden rounded-3xl bg-[color:var(--trust-blue)] p-6 shadow-[0_20px_60px_rgba(27,73,101,0.35)] ring-1 ring-white/15">
+      {/* Premium (highlight) */}
+      {/* <div className="relative overflow-hidden rounded-3xl bg-[color:var(--trust-blue)] p-6 shadow-[0_20px_60px_rgba(27,73,101,0.35)] ring-1 ring-white/15">
           <div className="absolute left-1/2 top-4 -translate-x-1/2">
             <span className="rounded-full bg-white/20 px-3 py-1 text-[10px] font-extrabold text-white ring-1 ring-white/25">
               ⭐ Phổ biến nhất
@@ -359,10 +360,10 @@ export default function MindPointsPage() {
           >
             Chọn Premium
           </button>
-        </div>
+        </div> */}
 
-        {/* Platinum */}
-        <div className="rounded-3xl bg-[color:var(--corporate-blue)] p-6 shadow-[0_20px_60px_rgba(27,73,101,0.30)] ring-1 ring-white/15">
+      {/* Platinum */}
+      {/* <div className="rounded-3xl bg-[color:var(--corporate-blue)] p-6 shadow-[0_20px_60px_rgba(27,73,101,0.30)] ring-1 ring-white/15">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-[12px] font-extrabold text-white">
@@ -414,7 +415,7 @@ export default function MindPointsPage() {
             Chọn Platinum
           </button>
         </div>
-      </div>
+      </div> */}
 
       {/* Bottom banner */}
       <div className="rounded-3xl bg-[color:var(--trust-blue)]/80 px-6 py-5 text-center text-white shadow-[0_20px_60px_rgba(27,73,101,0.22)] ring-1 ring-white/15">

@@ -218,3 +218,41 @@ export type AppointmentDto = {
 
   meetingJoinUrl?: string | null;
 };
+
+export type SubscriptionPlanDto = {
+  subId: number;
+  name: string;
+  price: number;
+  billingCycle: "monthly" | "yearly" | string;
+  tierSubtitle?: string;
+  badgeLabel?: string;
+  shortDesc?: string;
+  features: string[];
+  isActive: boolean;
+};
+
+export type MySubscriptionDto = {
+  plan: SubscriptionPlanDto;
+  status: "active" | "inactive" | "expired" | string;
+  expiryDate?: string | null; // "YYYY-MM-DD"
+  paymentId?: number | null;
+};
+
+export type SubscriptionConfirmationDto = {
+  plan: SubscriptionPlanDto;
+  subscriptionStatus: "active" | "inactive" | "expired" | string;
+  expiryDate?: string | null; // "YYYY-MM-DD"
+  paymentId: number;
+  paymentStatus: "paid" | "pending" | "failed" | string;
+};
+
+export type InitiateSubscriptionPaymentRequestDto = {
+  methodKey: string; // "vnpay" | "momo" | ...
+};
+
+export type InitiateSubscriptionPaymentResponseDto = {
+  paymentId: number;
+  status: string; // usually "pending"
+  redirectUrl?: string | null;
+  message?: string | null;
+};
