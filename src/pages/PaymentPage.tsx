@@ -145,7 +145,6 @@ function RowIcon({
 }: {
   kind: "calendar" | "clock" | "video" | "mail" | "link";
 }) {
-  // Icon paths retained from original
   const icon =
     kind === "calendar" ? (
       <path
@@ -458,6 +457,23 @@ export default function PaymentPage() {
     if (!canPay) return;
     setPaying(true);
     setErr(null);
+
+    const paymentWindow = window.open("", "_blank");
+
+    if (paymentWindow) {
+      paymentWindow.document.write(`
+            <html>
+                <head><title>Đang xử lý thanh toán...</title></head>
+                <body style="font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh;">
+                    <div style="text-align: center;">
+                        <h3>Đang kết nối tới cổng thanh toán...</h3>
+                        <p>Vui lòng không tắt cửa sổ này.</p>
+                    </div>
+                </body>
+            </html>
+        `);
+    }
+
     try {
       const body: InitiateAppointmentPaymentRequestDto = {
         methodKey,
@@ -471,20 +487,26 @@ export default function PaymentPage() {
       const res = await api.checkout.payAppointment(apptId, body);
 
       if (res.redirectUrl) {
-        window.location.href = res.redirectUrl;
+        if (paymentWindow) {
+          paymentWindow.location.href = res.redirectUrl;
+        } else {
+          // Fallback nếu tab đầu tiên fail
+          window.open(res.redirectUrl, "_blank");
+        }
         return;
       }
+      if (paymentWindow) paymentWindow.close();
 
-      // If no redirect (e.g. MindPoints), verify success
       try {
         const conf = await api.checkout.confirmation(apptId);
         setJoinUrl(conf.meetingJoinUrl);
         setSuccessOpen(true);
       } catch {
-        // Fallback if confirmation fails fetching
         setSuccessOpen(true);
       }
     } catch {
+      // Có lỗi thì đóng tab thừa
+      if (paymentWindow) paymentWindow.close();
       setErr("Thanh toán thất bại. Vui lòng kiểm tra lại số dư hoặc kết nối.");
     } finally {
       setPaying(false);

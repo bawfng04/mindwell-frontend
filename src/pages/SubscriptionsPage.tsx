@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { api } from "../services/api";
 import type { MySubscriptionDto, SubscriptionPlanDto } from "../types/api";
 
+// component này không dùng, đừng quan tâm cái này
+
 function isAbortError(e: unknown) {
   return (
     (typeof e === "object" &&

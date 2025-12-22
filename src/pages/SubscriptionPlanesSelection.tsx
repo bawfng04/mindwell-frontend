@@ -18,7 +18,6 @@ function formatVnd(value: number) {
 }
 
 function isInternalApiRedirect(url: string) {
-
   return (
     url.startsWith("/api/") ||
     url.includes("localhost:5173/api/") ||
@@ -70,10 +69,33 @@ export default function SubscriptionPlansSection() {
   async function onBuy(subId: number) {
     setErr(null);
     setPayingSubId(subId);
+
+    // 1. Mở trước 1 tab trống để tránh bị trình duyệt chặn (Popup Blocker)
+    // Nếu API trả về lâu quá thì user vẫn thấy tab này loading
+    const paymentWindow = window.open("", "_blank");
+
+    // Viết tạm thông báo vào tab mới cho user yên tâm
+    if (paymentWindow) {
+        paymentWindow.document.write(`
+            <html>
+                <head><title>Đang xử lý thanh toán...</title></head>
+                <body style="font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh;">
+                    <div style="text-align: center;">
+                        <h3>Đang kết nối tới cổng thanh toán...</h3>
+                        <p>Vui lòng không tắt cửa sổ này.</p>
+                    </div>
+                </body>
+            </html>
+        `);
+    }
+
     try {
       const res = await api.subscriptions.pay(subId, { methodKey });
 
+      // Nếu là internal redirect (xử lý ngầm), thì đóng tab vừa mở vì không cần dùng
       if (res.redirectUrl && isInternalApiRedirect(res.redirectUrl)) {
+        if (paymentWindow) paymentWindow.close();
+
         await fetch(res.redirectUrl, {
           headers: { Accept: "application/json" },
         }).catch(() => {});
@@ -81,13 +103,25 @@ export default function SubscriptionPlansSection() {
         return;
       }
 
+      // Nếu có link thanh toán (VNPay, Momo...) -> Nạp link vào tab đã mở
       if (res.redirectUrl) {
-        window.location.href = res.redirectUrl;
+        if (paymentWindow) {
+            paymentWindow.location.href = res.redirectUrl;
+        } else {
+            // Fallback: Nếu vì lý do gì đó tab ko mở được lúc đầu, thử mở lại (dễ bị chặn hơn)
+            window.open(res.redirectUrl, "_blank");
+        }
         return;
       }
 
+      // Trường hợp xong luôn không redirect -> Đóng tab thừa
+      if (paymentWindow) paymentWindow.close();
       nav(`/goi-thanh-vien/ket-qua?paymentId=${res.paymentId}`);
+
     } catch (e) {
+      // Có lỗi thì nhớ đóng cái tab kia lại
+      if (paymentWindow) paymentWindow.close();
+
       const status = (e as any)?.status;
       if (status === 401) setErr("Bạn cần đăng nhập để mua gói.");
       else if (status === 409) setErr("Bạn đã có gói thành viên hiện tại.");
@@ -193,7 +227,7 @@ export default function SubscriptionPlansSection() {
 
             <ul className="mt-4 space-y-2 text-[12px] font-semibold text-black/60">
               {(p.features ?? []).slice(0, 8).map((f, idx) => {
-                const normalized = (f ?? "").replace(/\\n/g, "\n"); // nếu backend trả "\\n"
+                const normalized = (f ?? "").replace(/\\n/g, "\n");
                 const lines = normalized.split("\n").filter(Boolean);
 
                 return (
