@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import SubscriptionPlansSection from "./SubscriptionPlanesSelection";
 // import kh from "../assets/kh.png";
+import Seo from "../components/Seo";
 
 type PointsPack = { points: number; priceVnd: number; tag?: string };
 // type PlanKey = "free" | "premium" | "platinum";
@@ -88,182 +89,190 @@ export default function MindPointsPage() {
   // const [selectedPlan, setSelectedPlan] = useState<PlanKey>("premium");
 
   return (
-    <div className="space-y-6">
-      {/* Page title (outside hero) */}
-      <div className="text-center">
-        {/* <Badge>⚡ Linh hoạt &amp; Tiết kiệm</Badge> */}
+    <>
+      <Seo
+        title="Mua Mind Points - MindWell"
+        description="Mua gói Mind Points để sử dụng các dịch vụ tư vấn tâm lý và phát triển bản thân trên MindWell."
+        canonicalPath="/mind-points"
+        ogType="website"
+      />
+      <div className="space-y-6">
+        {/* Page title (outside hero) */}
+        <div className="text-center">
+          {/* <Badge>⚡ Linh hoạt &amp; Tiết kiệm</Badge> */}
 
-        <h1 className="mt-4 text-3xl font-extrabold text-[color:var(--corporate-blue)]">
-          MindPoints &amp; Gói thành viên
-        </h1>
+          <h1 className="mt-4 text-3xl font-extrabold text-[color:var(--corporate-blue)]">
+            MindPoints &amp; Gói thành viên
+          </h1>
 
-        <p className="mt-2 text-[12px] font-semibold text-black/45">
-          Hai cách linh hoạt để tiết kiệm chi phí và nhận được dịch vụ tốt nhất
-        </p>
-      </div>
-
-      {/* Hero card */}
-      <section className="overflow-hidden rounded-3xl bg-[color:var(--trust-blue)] shadow-[0_20px_60px_rgba(27,73,101,0.30)] ring-1 ring-white/15">
-        <div className="p-6 md:p-7">
-          <div className="flex items-start gap-3">
-            <IconBox label="⟲" />
-            <div className="min-w-0">
-              <div className="text-[16px] font-extrabold text-white">
-                MindPoints
-              </div>
-              <div className="mt-1 text-[12px] font-semibold text-white/75">
-                Hệ thống điểm linh hoạt, dùng khi cần
-              </div>
-            </div>
-          </div>
-
-          {/* Steps */}
-          <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-3">
-            {[
-              {
-                n: "1",
-                title: "Nạp điểm",
-                desc: "100.000 VNĐ = 100 MindPoints",
-                hint: "Càng nạp càng hời!",
-                icon: "⬇",
-              },
-              {
-                n: "2",
-                title: "Đặt lịch",
-                desc: "1 buổi = 200 – 400 điểm",
-                hint: "Tuỳ theo giá tiền, chuyên gia và chuyên môn",
-                icon: "📅",
-              },
-              {
-                n: "3",
-                title: "Thưởng",
-                desc: "Tích luỹ 3.000 điểm",
-                hint: "Tặng 1 buổi miễn phí (≈ 300 điểm)",
-                icon: "🎁",
-              },
-            ].map((s) => (
-              <div
-                key={s.n}
-                className="rounded-2xl bg-white/10 p-5 ring-1 ring-white/15"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="text-[18px] font-extrabold text-white">
-                    {s.n}
-                  </div>
-                  <div className="text-[12px] text-white/80">{s.icon}</div>
-                </div>
-                <div className="mt-2 text-[13px] font-extrabold text-white">
-                  {s.title}
-                </div>
-                <div className="mt-1 text-[12px] font-semibold text-white/80">
-                  {s.desc}
-                </div>
-                <div className="mt-2 text-[11px] font-semibold text-white/65">
-                  {s.hint}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Packs */}
-          <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4">
-            {packs.map((p) => {
-              const active = selectedPack === p.points;
-              return (
-                <button
-                  key={p.points}
-                  type="button"
-                  onClick={() => setSelectedPack(p.points)}
-                  className={[
-                    "relative rounded-2xl px-4 py-4 text-left ring-1 transition-colors",
-                    active
-                      ? "bg-white text-[color:var(--corporate-blue)] ring-white/50"
-                      : "bg-white/10 text-white ring-white/15 hover:bg-white/15",
-                  ].join(" ")}
-                >
-                  {p.tag ? (
-                    <span
-                      className={[
-                        "absolute -top-2 left-4 rounded-full px-2 py-1 text-[10px] font-extrabold ring-1",
-                        active
-                          ? "bg-[color:var(--innovation-sky)] text-[color:var(--corporate-blue)] ring-black/5"
-                          : "bg-amber-300 text-[color:var(--corporate-blue)] ring-black/5",
-                      ].join(" ")}
-                    >
-                      {p.tag}
-                    </span>
-                  ) : null}
-
-                  <div className="text-[18px] font-extrabold">{p.points}</div>
-                  <div
-                    className={
-                      active
-                        ? "text-[12px] font-semibold text-black/50"
-                        : "text-[12px] font-semibold text-white/75"
-                    }
-                  >
-                    {formatVnd(p.priceVnd)}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+          <p className="mt-2 text-[12px] font-semibold text-black/45">
+            Hai cách linh hoạt để tiết kiệm chi phí và nhận được dịch vụ tốt
+            nhất
+          </p>
         </div>
-      </section>
 
-      {/* Benefit cards */}
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-        {[
-          {
-            title: "Linh hoạt",
-            desc: "Dùng khi nào cần, không ràng buộc cam kết hằng tháng",
-            icon: "⚡",
-          },
-          {
-            title: "Không hết hạn",
-            desc: "Điểm tồn tại vĩnh viễn, dùng khi bạn cần",
-            icon: "◎",
-          },
-          {
-            title: "Tích điểm thưởng",
-            desc: "Càng dùng nhiều, càng nhận nhiều ưu đãi",
-            icon: "🎁",
-          },
-        ].map((b) => (
-          <div
-            key={b.title}
-            className="rounded-2xl bg-white p-5 shadow-[0_10px_30px_rgba(27,73,101,0.10)] ring-1 ring-[color:var(--innovation-sky)]/30"
-          >
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[color:var(--calm-background)] text-[color:var(--trust-blue)] ring-1 ring-black/5">
-                <span className="text-[14px] font-extrabold">{b.icon}</span>
-              </div>
-              <div>
-                <div className="text-[13px] font-extrabold text-[color:var(--corporate-blue)]">
-                  {b.title}
+        {/* Hero card */}
+        <section className="overflow-hidden rounded-3xl bg-[color:var(--trust-blue)] shadow-[0_20px_60px_rgba(27,73,101,0.30)] ring-1 ring-white/15">
+          <div className="p-6 md:p-7">
+            <div className="flex items-start gap-3">
+              <IconBox label="⟲" />
+              <div className="min-w-0">
+                <div className="text-[16px] font-extrabold text-white">
+                  MindPoints
                 </div>
-                <div className="mt-1 text-[12px] font-semibold text-black/45">
-                  {b.desc}
+                <div className="mt-1 text-[12px] font-semibold text-white/75">
+                  Hệ thống điểm linh hoạt, dùng khi cần
                 </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
 
-      {/* Plans */}
-      <div className="text-center">
-        <h2 className="text-2xl font-extrabold text-[color:var(--corporate-blue)]">
-          Hoặc chọn Gói thành viên
-        </h2>
-        <p className="mt-2 text-[12px] font-semibold text-black/45">
-          Giảm giá và ưu đãi theo tháng, dùng kèm với MindPoints
-        </p>
-      </div>
-      <SubscriptionPlansSection />
-      {/* <div className="grid grid-cols-1 gap-5 md:grid-cols-3"> */}
-      {/* Free */}
-      {/* <div className="rounded-3xl bg-white p-6 shadow-[0_10px_30px_rgba(27,73,101,0.10)] ring-1 ring-[color:var(--innovation-sky)]/30">
+            {/* Steps */}
+            <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-3">
+              {[
+                {
+                  n: "1",
+                  title: "Nạp điểm",
+                  desc: "100.000 VNĐ = 100 MindPoints",
+                  hint: "Càng nạp càng hời!",
+                  icon: "⬇",
+                },
+                {
+                  n: "2",
+                  title: "Đặt lịch",
+                  desc: "1 buổi = 200 – 400 điểm",
+                  hint: "Tuỳ theo giá tiền, chuyên gia và chuyên môn",
+                  icon: "📅",
+                },
+                {
+                  n: "3",
+                  title: "Thưởng",
+                  desc: "Tích luỹ 3.000 điểm",
+                  hint: "Tặng 1 buổi miễn phí (≈ 300 điểm)",
+                  icon: "🎁",
+                },
+              ].map((s) => (
+                <div
+                  key={s.n}
+                  className="rounded-2xl bg-white/10 p-5 ring-1 ring-white/15"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="text-[18px] font-extrabold text-white">
+                      {s.n}
+                    </div>
+                    <div className="text-[12px] text-white/80">{s.icon}</div>
+                  </div>
+                  <div className="mt-2 text-[13px] font-extrabold text-white">
+                    {s.title}
+                  </div>
+                  <div className="mt-1 text-[12px] font-semibold text-white/80">
+                    {s.desc}
+                  </div>
+                  <div className="mt-2 text-[11px] font-semibold text-white/65">
+                    {s.hint}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Packs */}
+            <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4">
+              {packs.map((p) => {
+                const active = selectedPack === p.points;
+                return (
+                  <button
+                    key={p.points}
+                    type="button"
+                    onClick={() => setSelectedPack(p.points)}
+                    className={[
+                      "relative rounded-2xl px-4 py-4 text-left ring-1 transition-colors",
+                      active
+                        ? "bg-white text-[color:var(--corporate-blue)] ring-white/50"
+                        : "bg-white/10 text-white ring-white/15 hover:bg-white/15",
+                    ].join(" ")}
+                  >
+                    {p.tag ? (
+                      <span
+                        className={[
+                          "absolute -top-2 left-4 rounded-full px-2 py-1 text-[10px] font-extrabold ring-1",
+                          active
+                            ? "bg-[color:var(--innovation-sky)] text-[color:var(--corporate-blue)] ring-black/5"
+                            : "bg-amber-300 text-[color:var(--corporate-blue)] ring-black/5",
+                        ].join(" ")}
+                      >
+                        {p.tag}
+                      </span>
+                    ) : null}
+
+                    <div className="text-[18px] font-extrabold">{p.points}</div>
+                    <div
+                      className={
+                        active
+                          ? "text-[12px] font-semibold text-black/50"
+                          : "text-[12px] font-semibold text-white/75"
+                      }
+                    >
+                      {formatVnd(p.priceVnd)}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        {/* Benefit cards */}
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+          {[
+            {
+              title: "Linh hoạt",
+              desc: "Dùng khi nào cần, không ràng buộc cam kết hằng tháng",
+              icon: "⚡",
+            },
+            {
+              title: "Không hết hạn",
+              desc: "Điểm tồn tại vĩnh viễn, dùng khi bạn cần",
+              icon: "◎",
+            },
+            {
+              title: "Tích điểm thưởng",
+              desc: "Càng dùng nhiều, càng nhận nhiều ưu đãi",
+              icon: "🎁",
+            },
+          ].map((b) => (
+            <div
+              key={b.title}
+              className="rounded-2xl bg-white p-5 shadow-[0_10px_30px_rgba(27,73,101,0.10)] ring-1 ring-[color:var(--innovation-sky)]/30"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[color:var(--calm-background)] text-[color:var(--trust-blue)] ring-1 ring-black/5">
+                  <span className="text-[14px] font-extrabold">{b.icon}</span>
+                </div>
+                <div>
+                  <div className="text-[13px] font-extrabold text-[color:var(--corporate-blue)]">
+                    {b.title}
+                  </div>
+                  <div className="mt-1 text-[12px] font-semibold text-black/45">
+                    {b.desc}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Plans */}
+        <div className="text-center">
+          <h2 className="text-2xl font-extrabold text-[color:var(--corporate-blue)]">
+            Hoặc chọn Gói thành viên
+          </h2>
+          <p className="mt-2 text-[12px] font-semibold text-black/45">
+            Giảm giá và ưu đãi theo tháng, dùng kèm với MindPoints
+          </p>
+        </div>
+        <SubscriptionPlansSection />
+        {/* <div className="grid grid-cols-1 gap-5 md:grid-cols-3"> */}
+        {/* Free */}
+        {/* <div className="rounded-3xl bg-white p-6 shadow-[0_10px_30px_rgba(27,73,101,0.10)] ring-1 ring-[color:var(--innovation-sky)]/30">
           <div className="text-[12px] font-extrabold text-[color:var(--corporate-blue)]">
             Free
           </div>
@@ -303,8 +312,8 @@ export default function MindPointsPage() {
           </button>
         </div> */}
 
-      {/* Premium (highlight) */}
-      {/* <div className="relative overflow-hidden rounded-3xl bg-[color:var(--trust-blue)] p-6 shadow-[0_20px_60px_rgba(27,73,101,0.35)] ring-1 ring-white/15">
+        {/* Premium (highlight) */}
+        {/* <div className="relative overflow-hidden rounded-3xl bg-[color:var(--trust-blue)] p-6 shadow-[0_20px_60px_rgba(27,73,101,0.35)] ring-1 ring-white/15">
           <div className="absolute left-1/2 top-4 -translate-x-1/2">
             <span className="rounded-full bg-white/20 px-3 py-1 text-[10px] font-extrabold text-white ring-1 ring-white/25">
               ⭐ Phổ biến nhất
@@ -362,8 +371,8 @@ export default function MindPointsPage() {
           </button>
         </div> */}
 
-      {/* Platinum */}
-      {/* <div className="rounded-3xl bg-[color:var(--corporate-blue)] p-6 shadow-[0_20px_60px_rgba(27,73,101,0.30)] ring-1 ring-white/15">
+        {/* Platinum */}
+        {/* <div className="rounded-3xl bg-[color:var(--corporate-blue)] p-6 shadow-[0_20px_60px_rgba(27,73,101,0.30)] ring-1 ring-white/15">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-[12px] font-extrabold text-white">
@@ -417,16 +426,17 @@ export default function MindPointsPage() {
         </div>
       </div> */}
 
-      {/* Bottom banner */}
-      <div className="rounded-3xl bg-[color:var(--trust-blue)]/80 px-6 py-5 text-center text-white shadow-[0_20px_60px_rgba(27,73,101,0.22)] ring-1 ring-white/15">
-        <div className="text-[12px] font-extrabold">
-          🤝 Kết hợp cả hai để tối ưu chi phí
-        </div>
-        <div className="mt-2 text-[12px] font-semibold text-white/85">
-          MindPoints + Đăng ký Premium/Platinum = Giảm giá tự động cho mọi buổi
-          tư vấn, tiết kiệm tối đa chi phí
+        {/* Bottom banner */}
+        <div className="rounded-3xl bg-[color:var(--trust-blue)]/80 px-6 py-5 text-center text-white shadow-[0_20px_60px_rgba(27,73,101,0.22)] ring-1 ring-white/15">
+          <div className="text-[12px] font-extrabold">
+            🤝 Kết hợp cả hai để tối ưu chi phí
+          </div>
+          <div className="mt-2 text-[12px] font-semibold text-white/85">
+            MindPoints + Đăng ký Premium/Platinum = Giảm giá tự động cho mọi
+            buổi tư vấn, tiết kiệm tối đa chi phí
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

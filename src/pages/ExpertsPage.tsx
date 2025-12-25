@@ -8,6 +8,7 @@ import type {
   LanguageOption,
   SpecializationOption,
 } from "../types/api";
+import Seo from "../components/Seo";
 
 type PriceFilter = "Tất cả" | "<= 250k" | "250k - 300k" | ">= 300k";
 type GenderFilter = "Tất cả" | "male" | "female" | "other";
@@ -117,76 +118,84 @@ function ExpertCard({ expert }: { expert: ExpertCardDto }) {
   const langs = (expert.languages ?? []).map((l) => l.name).join(", ");
 
   return (
-    <article className="overflow-hidden rounded-2xl bg-white shadow-[0_10px_30px_rgba(27,73,101,0.10)] ring-1 ring-[color:var(--innovation-sky)]/35">
-      <div className="relative aspect-[16/9] bg-gradient-to-br from-[color:var(--innovation-sky)]/20 to-[color:var(--trust-blue)]/15">
-        <div className="flex h-full w-full items-center justify-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/70 text-xl font-bold text-[color:var(--corporate-blue)] ring-1 ring-black/5">
-            {initials(expert.fullName)}
-          </div>
-        </div>
-
-        <div className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-white/90 px-2 py-1 text-xs font-semibold text-[color:var(--corporate-blue)] ring-1 ring-black/5">
-          <span className="text-amber-500">
-            <StarIcon />
-          </span>
-          {Number.isFinite(expert.avgRating)
-            ? expert.avgRating.toFixed(1)
-            : "0.0"}
-        </div>
-
-        <div className="absolute right-3 top-3">
-          {expert.isVerified ? <CheckBadge /> : null}
-        </div>
-      </div>
-
-      <div className="p-4">
-        <div className="space-y-1">
-          <h3 className="text-[15px] font-bold text-[color:var(--corporate-blue)]">
-            {expert.fullName}
-          </h3>
-          <p className="text-[12px] font-semibold text-[color:var(--trust-blue)]">
-            {expert.title}
-          </p>
-          <p className="text-[12px] text-black/55">{spec}</p>
-          {langs ? (
-            <p className="text-[11px] text-black/45">Ngôn ngữ: {langs}</p>
-          ) : null}
-        </div>
-
-        <div className="mt-3 flex items-end justify-between">
-          <div className="leading-tight">
-            <div className="text-[15px] font-bold text-[color:var(--corporate-blue)]">
-              {formatVnd(expert.hourlyRate)}
-              <span className="text-[11px] font-semibold text-black/45">
-                {" "}
-                /giờ
-              </span>
+    <>
+      <Seo
+        title={`Đặt lịch với ${expert.fullName} - MindWell`}
+        description={`Đặt lịch tư vấn với chuyên gia ${expert.fullName}, ${expert.title} trên MindWell.`}
+        canonicalPath={`/chuyen-gia/${expert.expertId}`}
+        ogType="website"
+      />
+      <article className="overflow-hidden rounded-2xl bg-white shadow-[0_10px_30px_rgba(27,73,101,0.10)] ring-1 ring-[color:var(--innovation-sky)]/35">
+        <div className="relative aspect-[16/9] bg-gradient-to-br from-[color:var(--innovation-sky)]/20 to-[color:var(--trust-blue)]/15">
+          <div className="flex h-full w-full items-center justify-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/70 text-xl font-bold text-[color:var(--corporate-blue)] ring-1 ring-black/5">
+              {initials(expert.fullName)}
             </div>
           </div>
 
-          <div className="text-[11px] font-semibold text-black/45">
-            {expert.reviewCount} đánh giá
+          <div className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-white/90 px-2 py-1 text-xs font-semibold text-[color:var(--corporate-blue)] ring-1 ring-black/5">
+            <span className="text-amber-500">
+              <StarIcon />
+            </span>
+            {Number.isFinite(expert.avgRating)
+              ? expert.avgRating.toFixed(1)
+              : "0.0"}
+          </div>
+
+          <div className="absolute right-3 top-3">
+            {expert.isVerified ? <CheckBadge /> : null}
           </div>
         </div>
 
-        <div className="mt-4 flex gap-3">
-          <Link
-            to={`/chuyen-gia/${expert.expertId}`}
-            className="flex-1 rounded-full border border-[color:var(--innovation-sky)]/60 bg-white px-4 py-2 text-center text-[12px] font-semibold text-[color:var(--corporate-blue)] hover:bg-black/5"
-          >
-            Xem hồ sơ
-          </Link>
+        <div className="p-4">
+          <div className="space-y-1">
+            <h3 className="text-[15px] font-bold text-[color:var(--corporate-blue)]">
+              {expert.fullName}
+            </h3>
+            <p className="text-[12px] font-semibold text-[color:var(--trust-blue)]">
+              {expert.title}
+            </p>
+            <p className="text-[12px] text-black/55">{spec}</p>
+            {langs ? (
+              <p className="text-[11px] text-black/45">Ngôn ngữ: {langs}</p>
+            ) : null}
+          </div>
 
-          <Link
-            to={`/chuyen-gia/${expert.expertId}`}
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-[color:var(--trust-blue)] px-4 py-2 text-[12px] font-semibold text-white hover:brightness-95 active:brightness-90"
-          >
-            <CalendarIcon />
-            Đặt lịch
-          </Link>
+          <div className="mt-3 flex items-end justify-between">
+            <div className="leading-tight">
+              <div className="text-[15px] font-bold text-[color:var(--corporate-blue)]">
+                {formatVnd(expert.hourlyRate)}
+                <span className="text-[11px] font-semibold text-black/45">
+                  {" "}
+                  /giờ
+                </span>
+              </div>
+            </div>
+
+            <div className="text-[11px] font-semibold text-black/45">
+              {expert.reviewCount} đánh giá
+            </div>
+          </div>
+
+          <div className="mt-4 flex gap-3">
+            <Link
+              to={`/chuyen-gia/${expert.expertId}`}
+              className="flex-1 rounded-full border border-[color:var(--innovation-sky)]/60 bg-white px-4 py-2 text-center text-[12px] font-semibold text-[color:var(--corporate-blue)] hover:bg-black/5"
+            >
+              Xem hồ sơ
+            </Link>
+
+            <Link
+              to={`/chuyen-gia/${expert.expertId}`}
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-[color:var(--trust-blue)] px-4 py-2 text-[12px] font-semibold text-white hover:brightness-95 active:brightness-90"
+            >
+              <CalendarIcon />
+              Đặt lịch
+            </Link>
+          </div>
         </div>
-      </div>
-    </article>
+      </article>
+    </>
   );
 }
 

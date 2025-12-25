@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../services/api";
 import type { AvailabilitySlotDto, ExpertDetailDto } from "../types/api";
+import Seo from "../components/Seo";
 
 function formatVnd(value: number) {
   return `${new Intl.NumberFormat("vi-VN").format(value)}đ`;
@@ -157,148 +158,156 @@ function CalendarBookingCard({
   );
 
   return (
-    <aside className="sticky top-20 rounded-2xl bg-[color:var(--trust-blue)]/80 p-5 text-white shadow-[0_10px_30px_rgba(27,73,101,0.18)] ring-1 ring-white/15">
-      <div className="text-[14px] font-bold">Đặt lịch tư vấn</div>
+    <>
+      <Seo
+        title={`Đặt lịch với ${expert.fullName} - MindWell`}
+        description={`Đặt lịch tư vấn với chuyên gia ${expert.fullName}, ${expert.title} trên MindWell.`}
+        canonicalPath={`/chuyen-gia/${expert.expertId}`}
+        ogType="website"
+      />
+      <aside className="sticky top-20 rounded-2xl bg-[color:var(--trust-blue)]/80 p-5 text-white shadow-[0_10px_30px_rgba(27,73,101,0.18)] ring-1 ring-white/15">
+        <div className="text-[14px] font-bold">Đặt lịch tư vấn</div>
 
-      <div className="mt-4 rounded-2xl bg-white/10 p-4 ring-1 ring-white/15">
-        <div className="flex items-center justify-between">
-          <button
-            type="button"
-            className="rounded-lg px-2 py-1 text-white/90 hover:bg-white/10"
-            onClick={() => setMonthCursor((m) => addMonths(m, -1))}
-          >
-            ‹
-          </button>
-          <div className="text-[12px] font-semibold">{monthLabel}</div>
-          <button
-            type="button"
-            className="rounded-lg px-2 py-1 text-white/90 hover:bg-white/10"
-            onClick={() => setMonthCursor((m) => addMonths(m, 1))}
-          >
-            ›
-          </button>
-        </div>
-
-        <div className="mt-3 grid grid-cols-7 gap-2 text-center text-[10px] font-semibold text-white/70">
-          {["T2", "T3", "T4", "T5", "T6", "T7", "CN"].map((d) => (
-            <div key={d}>{d}</div>
-          ))}
-        </div>
-
-        <div className="mt-2 grid grid-cols-7 gap-2">
-          {days.result.map((d, idx) => {
-            const inMonth = d.getMonth() === monthCursor.getMonth();
-            const selected = isSameDay(d, selectedDate);
-            const hasSlots = allSlots.some((s) =>
-              isSameDay(new Date(s.startTime), d)
-            );
-
-            return (
-              <button
-                key={`${d.toISOString()}-${idx}`}
-                type="button"
-                onClick={() => {
-                  setSelectedDate(d);
-                  setSelectedAvailabilityId(null);
-                }}
-                className={[
-                  "h-8 rounded-lg text-[11px] font-semibold transition-colors relative",
-                  inMonth ? "text-white" : "text-white/40",
-                  selected
-                    ? "bg-white !text-black/80 font-bold"
-                    : hasSlots
-                    ? "bg-white/10 hover:bg-white/15"
-                    : inMonth
-                    ? "bg-red-500/15 hover:bg-red-500/20 ring-1 ring-red-300/30"
-                    : "bg-white/10 hover:bg-white/15",
-                ].join(" ")}
-              >
-                {d.getDate()}
-                {hasSlots && !selected && (
-                  <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[color:var(--innovation-sky)]" />
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="mt-4 text-[11px] font-semibold text-white/90">
-          Chọn giờ ({availableSlotsForDate.length} khung giờ)
-        </div>
-
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          {availableSlotsForDate.length === 0 ? (
+        <div className="mt-4 rounded-2xl bg-white/10 p-4 ring-1 ring-white/15">
+          <div className="flex items-center justify-between">
             <button
               type="button"
-              disabled
-              className="col-span-2 rounded-lg px-2 py-2 text-[10px] font-semibold ring-1 ring-red-300 bg-red-50 text-red-700 opacity-80 cursor-not-allowed"
+              className="rounded-lg px-2 py-1 text-white/90 hover:bg-white/10"
+              onClick={() => setMonthCursor((m) => addMonths(m, -1))}
             >
-              Không có lịch trống ngày này
+              ‹
             </button>
-          ) : (
-            availableSlotsForDate.map((s) => {
-              const active = selectedAvailabilityId === s.availabilityId;
-              const label = formatTimeRange(s.startTime, s.endTime);
+            <div className="text-[12px] font-semibold">{monthLabel}</div>
+            <button
+              type="button"
+              className="rounded-lg px-2 py-1 text-white/90 hover:bg-white/10"
+              onClick={() => setMonthCursor((m) => addMonths(m, 1))}
+            >
+              ›
+            </button>
+          </div>
+
+          <div className="mt-3 grid grid-cols-7 gap-2 text-center text-[10px] font-semibold text-white/70">
+            {["T2", "T3", "T4", "T5", "T6", "T7", "CN"].map((d) => (
+              <div key={d}>{d}</div>
+            ))}
+          </div>
+
+          <div className="mt-2 grid grid-cols-7 gap-2">
+            {days.result.map((d, idx) => {
+              const inMonth = d.getMonth() === monthCursor.getMonth();
+              const selected = isSameDay(d, selectedDate);
+              const hasSlots = allSlots.some((s) =>
+                isSameDay(new Date(s.startTime), d)
+              );
 
               return (
                 <button
-                  key={s.availabilityId}
+                  key={`${d.toISOString()}-${idx}`}
                   type="button"
-                  onClick={() => setSelectedAvailabilityId(s.availabilityId)}
+                  onClick={() => {
+                    setSelectedDate(d);
+                    setSelectedAvailabilityId(null);
+                  }}
                   className={[
-                    "rounded-lg px-2 py-2 text-[10px] font-semibold ring-1 ring-white/15",
-                    active
-                      ? "bg-white text-[color:var(--corporate-blue)]"
-                      : "bg-white/10 text-white hover:bg-white/15",
+                    "h-8 rounded-lg text-[11px] font-semibold transition-colors relative",
+                    inMonth ? "text-white" : "text-white/40",
+                    selected
+                      ? "bg-white !text-black/80 font-bold"
+                      : hasSlots
+                      ? "bg-white/10 hover:bg-white/15"
+                      : inMonth
+                      ? "bg-red-500/15 hover:bg-red-500/20 ring-1 ring-red-300/30"
+                      : "bg-white/10 hover:bg-white/15",
                   ].join(" ")}
                 >
-                  {label}
+                  {d.getDate()}
+                  {hasSlots && !selected && (
+                    <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[color:var(--innovation-sky)]" />
+                  )}
                 </button>
               );
-            })
-          )}
-        </div>
-
-        <div className="mt-4 rounded-xl bg-white/10 p-3 ring-1 ring-white/15">
-          <div className="text-[11px] font-semibold text-white/85">
-            Thông tin cuộc hẹn
+            })}
           </div>
-          <div className="mt-1 text-[12px] font-bold">
-            {formatDateVi(selectedDate)}
-            {selectedSlotInfo
-              ? ` • ${formatTimeRange(
-                  selectedSlotInfo.startTime,
-                  selectedSlotInfo.endTime
-                )}`
-              : ""}
+
+          <div className="mt-4 text-[11px] font-semibold text-white/90">
+            Chọn giờ ({availableSlotsForDate.length} khung giờ)
           </div>
-          <div className="mt-1 text-[12px] font-semibold text-white/90">
-            {formatVnd(expert.hourlyRate)}{" "}
-            <span className="text-white/70">/giờ</span>
+
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            {availableSlotsForDate.length === 0 ? (
+              <button
+                type="button"
+                disabled
+                className="col-span-2 rounded-lg px-2 py-2 text-[10px] font-semibold ring-1 ring-red-300 bg-red-50 text-red-700 opacity-80 cursor-not-allowed"
+              >
+                Không có lịch trống ngày này
+              </button>
+            ) : (
+              availableSlotsForDate.map((s) => {
+                const active = selectedAvailabilityId === s.availabilityId;
+                const label = formatTimeRange(s.startTime, s.endTime);
+
+                return (
+                  <button
+                    key={s.availabilityId}
+                    type="button"
+                    onClick={() => setSelectedAvailabilityId(s.availabilityId)}
+                    className={[
+                      "rounded-lg px-2 py-2 text-[10px] font-semibold ring-1 ring-white/15",
+                      active
+                        ? "bg-white text-[color:var(--corporate-blue)]"
+                        : "bg-white/10 text-white hover:bg-white/15",
+                    ].join(" ")}
+                  >
+                    {label}
+                  </button>
+                );
+              })
+            )}
+          </div>
+
+          <div className="mt-4 rounded-xl bg-white/10 p-3 ring-1 ring-white/15">
+            <div className="text-[11px] font-semibold text-white/85">
+              Thông tin cuộc hẹn
+            </div>
+            <div className="mt-1 text-[12px] font-bold">
+              {formatDateVi(selectedDate)}
+              {selectedSlotInfo
+                ? ` • ${formatTimeRange(
+                    selectedSlotInfo.startTime,
+                    selectedSlotInfo.endTime
+                  )}`
+                : ""}
+            </div>
+            <div className="mt-1 text-[12px] font-semibold text-white/90">
+              {formatVnd(expert.hourlyRate)}{" "}
+              <span className="text-white/70">/giờ</span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            disabled={!selectedAvailabilityId || bookingLoading}
+            onClick={() => {
+              if (selectedAvailabilityId) onBook(selectedAvailabilityId);
+            }}
+            className={[
+              "mt-4 w-full rounded-xl px-4 py-3 text-[12px] font-bold shadow-sm transition-opacity",
+              selectedAvailabilityId && !bookingLoading
+                ? "bg-white text-[color:var(--corporate-blue)]"
+                : "bg-white/50 text-[color:var(--corporate-blue)] opacity-70 cursor-not-allowed",
+            ].join(" ")}
+          >
+            {bookingLoading ? "Đang xử lý..." : "Tiếp tục thanh toán"}
+          </button>
+
+          <div className="mt-2 text-center text-[10px] text-white/70">
+            Bạn có thể huỷ hoặc đổi lịch miễn phí trước 24h
           </div>
         </div>
-
-        <button
-          type="button"
-          disabled={!selectedAvailabilityId || bookingLoading}
-          onClick={() => {
-            if (selectedAvailabilityId) onBook(selectedAvailabilityId);
-          }}
-          className={[
-            "mt-4 w-full rounded-xl px-4 py-3 text-[12px] font-bold shadow-sm transition-opacity",
-            selectedAvailabilityId && !bookingLoading
-              ? "bg-white text-[color:var(--corporate-blue)]"
-              : "bg-white/50 text-[color:var(--corporate-blue)] opacity-70 cursor-not-allowed",
-          ].join(" ")}
-        >
-          {bookingLoading ? "Đang xử lý..." : "Tiếp tục thanh toán"}
-        </button>
-
-        <div className="mt-2 text-center text-[10px] text-white/70">
-          Bạn có thể huỷ hoặc đổi lịch miễn phí trước 24h
-        </div>
-      </div>
-    </aside>
+      </aside>
+    </>
   );
 }
 

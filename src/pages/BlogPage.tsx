@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 // import { BLOG_POSTS } from "../services/blog";
 import type { BlogCategoryDto, BlogPostListItemDto } from "../types/api";
 import { api } from "../services/api";
+import Seo from "../components/Seo";
 
 function isAbortError(e: unknown) {
   return (
@@ -186,70 +187,78 @@ function PostCard({ post }: { post: BlogPostListItemDto }) {
   const categoryLabel = post.categories?.[0]?.name ?? "Blog";
 
   return (
-    <article className="overflow-hidden rounded-3xl bg-white shadow-[0_10px_30px_rgba(27,73,101,0.12)] ring-1 ring-(--innovation-sky)/30">
-      <Link to={`/blog/${post.postId}`} className="block">
-        <div className="relative aspect-video bg-(--calm-background)">
-          {post.coverImageUrl ? (
-            <img
-              src={post.coverImageUrl}
-              alt={post.title}
-              className="h-full w-full object-cover"
-              loading="lazy"
-            />
-          ) : null}
+    <>
+      <Seo
+        title={post.title}
+        description={post.excerpt}
+        canonicalPath={`/blog/${post.postId}`}
+        ogType="article"
+      />
+      <article className="overflow-hidden rounded-3xl bg-white shadow-[0_10px_30px_rgba(27,73,101,0.12)] ring-1 ring-(--innovation-sky)/30">
+        <Link to={`/blog/${post.postId}`} className="block">
+          <div className="relative aspect-video bg-(--calm-background)">
+            {post.coverImageUrl ? (
+              <img
+                src={post.coverImageUrl}
+                alt={post.title}
+                className="h-full w-full object-cover"
+                loading="lazy"
+              />
+            ) : null}
 
-          <div className="absolute left-4 top-4">
-            <span className="rounded-full bg-white/90 px-3 py-1 text-[11px] font-extrabold text-(--corporate-blue) ring-1 ring-black/5">
-              {categoryLabel}
-            </span>
-          </div>
-        </div>
-      </Link>
-
-      <div className="p-5">
-        <div className="flex items-center gap-4 text-[11px] font-semibold text-black/45">
-          <span className="inline-flex items-center gap-2">
-            <span className="text-(--trust-blue)/80">
-              <CalendarIcon />
-            </span>
-            {new Date(post.publishedAt).toLocaleDateString("vi-VN")}
-          </span>
-          <span className="inline-flex items-center gap-2">
-            <span className="text-(--trust-blue)/80">
-              <ClockIcon />
-            </span>
-            {post.readingMinutes} phút đọc
-          </span>
-        </div>
-
-        <h3 className="mt-3 line-clamp-2 text-[16px] font-extrabold text-(--corporate-blue)">
-          {post.title}
-        </h3>
-
-        <p className="mt-2 line-clamp-3 text-[12px] font-semibold leading-6 text-black/50">
-          {post.excerpt}
-        </p>
-
-        <div className="mt-5 flex items-center justify-between border-t border-black/5 pt-4">
-          <div className="leading-tight">
-            <div className="text-[12px] font-extrabold text-(--corporate-blue)">
-              {post.author?.fullName ?? "—"}
-            </div>
-            <div className="text-[10px] font-semibold text-black/45">
-              {post.author?.title ?? ""}
+            <div className="absolute left-4 top-4">
+              <span className="rounded-full bg-white/90 px-3 py-1 text-[11px] font-extrabold text-(--corporate-blue) ring-1 ring-black/5">
+                {categoryLabel}
+              </span>
             </div>
           </div>
+        </Link>
 
-          <Link
-            to={`/blog/${post.postId}`}
-            className="inline-flex items-center justify-center rounded-full bg-(--calm-background) px-3 py-2 text-[12px] font-extrabold text-(--corporate-blue) ring-1 ring-black/5 hover:bg-black/5"
-            aria-label="Xem chi tiết"
-          >
-            →
-          </Link>
+        <div className="p-5">
+          <div className="flex items-center gap-4 text-[11px] font-semibold text-black/45">
+            <span className="inline-flex items-center gap-2">
+              <span className="text-(--trust-blue)/80">
+                <CalendarIcon />
+              </span>
+              {new Date(post.publishedAt).toLocaleDateString("vi-VN")}
+            </span>
+            <span className="inline-flex items-center gap-2">
+              <span className="text-(--trust-blue)/80">
+                <ClockIcon />
+              </span>
+              {post.readingMinutes} phút đọc
+            </span>
+          </div>
+
+          <h3 className="mt-3 line-clamp-2 text-[16px] font-extrabold text-(--corporate-blue)">
+            {post.title}
+          </h3>
+
+          <p className="mt-2 line-clamp-3 text-[12px] font-semibold leading-6 text-black/50">
+            {post.excerpt}
+          </p>
+
+          <div className="mt-5 flex items-center justify-between border-t border-black/5 pt-4">
+            <div className="leading-tight">
+              <div className="text-[12px] font-extrabold text-(--corporate-blue)">
+                {post.author?.fullName ?? "—"}
+              </div>
+              <div className="text-[10px] font-semibold text-black/45">
+                {post.author?.title ?? ""}
+              </div>
+            </div>
+
+            <Link
+              to={`/blog/${post.postId}`}
+              className="inline-flex items-center justify-center rounded-full bg-(--calm-background) px-3 py-2 text-[12px] font-extrabold text-(--corporate-blue) ring-1 ring-black/5 hover:bg-black/5"
+              aria-label="Xem chi tiết"
+            >
+              →
+            </Link>
+          </div>
         </div>
-      </div>
-    </article>
+      </article>
+    </>
   );
 }
 

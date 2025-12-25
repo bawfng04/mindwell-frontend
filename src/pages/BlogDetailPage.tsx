@@ -4,6 +4,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { api } from "../services/api";
 import type { BlogPostDetailDto, BlogPostListItemDto } from "../types/api";
+import Seo from "../components/Seo";
 
 function isAbortError(e: unknown) {
   return (
@@ -171,116 +172,124 @@ export default function BlogDetailPage() {
   const categoryLabel = post.categories?.[0]?.name ?? "Blog";
 
   return (
-    <article className="space-y-6">
-      <Link
-        to="/blog"
-        className="inline-flex items-center gap-2 rounded-full border border-[color:var(--innovation-sky)]/45 bg-white px-4 py-2 text-[12px] font-semibold text-[color:var(--corporate-blue)] hover:bg-black/5"
-      >
-        ← Quay lại
-      </Link>
+    <>
+      <Seo
+        title={post.title}
+        description={post.content.slice(0, 160)}
+        canonicalPath={`/blog/${post.postId}`}
+        ogType="article"
+      />
+      <article className="space-y-6">
+        <Link
+          to="/blog"
+          className="inline-flex items-center gap-2 rounded-full border border-[color:var(--innovation-sky)]/45 bg-white px-4 py-2 text-[12px] font-semibold text-[color:var(--corporate-blue)] hover:bg-black/5"
+        >
+          ← Quay lại
+        </Link>
 
-      {/* Hero */}
-      <header className="overflow-hidden rounded-3xl bg-white shadow-[0_10px_30px_rgba(27,73,101,0.12)] ring-1 ring-[color:var(--innovation-sky)]/30">
-        <div className="relative aspect-[16/7] bg-[color:var(--calm-background)]">
-          {post.coverImageUrl ? (
-            <img
-              src={post.coverImageUrl}
-              alt={post.title}
-              className="h-full w-full object-cover"
-            />
-          ) : null}
-          <div className="absolute left-5 top-5">
-            <span className="rounded-full bg-white/90 px-3 py-1 text-[11px] font-extrabold text-[color:var(--corporate-blue)] ring-1 ring-black/5">
-              {categoryLabel}
-            </span>
-          </div>
-        </div>
-
-        <div className="p-6 md:p-7">
-          <div className="flex flex-wrap items-center gap-4 text-[11px] font-semibold text-black/45">
-            <span className="inline-flex items-center gap-2">
-              <span className="text-[color:var(--trust-blue)]/80">
-                <CalendarIcon />
+        {/* Hero */}
+        <header className="overflow-hidden rounded-3xl bg-white shadow-[0_10px_30px_rgba(27,73,101,0.12)] ring-1 ring-[color:var(--innovation-sky)]/30">
+          <div className="relative aspect-[16/7] bg-[color:var(--calm-background)]">
+            {post.coverImageUrl ? (
+              <img
+                src={post.coverImageUrl}
+                alt={post.title}
+                className="h-full w-full object-cover"
+              />
+            ) : null}
+            <div className="absolute left-5 top-5">
+              <span className="rounded-full bg-white/90 px-3 py-1 text-[11px] font-extrabold text-[color:var(--corporate-blue)] ring-1 ring-black/5">
+                {categoryLabel}
               </span>
-              {new Date(post.publishedAt).toLocaleDateString("vi-VN")}
-            </span>
+            </div>
+          </div>
 
-            <span className="inline-flex items-center gap-2">
-              <span className="text-[color:var(--trust-blue)]/80">
-                <ClockIcon />
+          <div className="p-6 md:p-7">
+            <div className="flex flex-wrap items-center gap-4 text-[11px] font-semibold text-black/45">
+              <span className="inline-flex items-center gap-2">
+                <span className="text-[color:var(--trust-blue)]/80">
+                  <CalendarIcon />
+                </span>
+                {new Date(post.publishedAt).toLocaleDateString("vi-VN")}
               </span>
-              {post.readingMinutes} phút đọc
-            </span>
+
+              <span className="inline-flex items-center gap-2">
+                <span className="text-[color:var(--trust-blue)]/80">
+                  <ClockIcon />
+                </span>
+                {post.readingMinutes} phút đọc
+              </span>
+            </div>
+
+            <h1 className="mt-3 text-2xl font-extrabold text-[color:var(--corporate-blue)] md:text-3xl">
+              {post.title}
+            </h1>
+
+            <div className="mt-5 border-t border-black/5 pt-5">
+              <div className="text-[12px] font-extrabold text-[color:var(--corporate-blue)]">
+                {post.author?.fullName ?? "—"}
+              </div>
+              <div className="text-[11px] font-semibold text-black/45">
+                {post.author?.title ?? ""}
+              </div>
+            </div>
           </div>
+        </header>
 
-          <h1 className="mt-3 text-2xl font-extrabold text-[color:var(--corporate-blue)] md:text-3xl">
-            {post.title}
-          </h1>
-
-          <div className="mt-5 border-t border-black/5 pt-5">
-            <div className="text-[12px] font-extrabold text-[color:var(--corporate-blue)]">
-              {post.author?.fullName ?? "—"}
-            </div>
-            <div className="text-[11px] font-semibold text-black/45">
-              {post.author?.title ?? ""}
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
-        {/* Content */}
-        <section className="rounded-3xl bg-white p-6 shadow-[0_10px_30px_rgba(27,73,101,0.10)] ring-1 ring-[color:var(--innovation-sky)]/30 md:p-7">
-          {post.contentFormat === "markdown" ? (
-            <div className="space-y-4 text-[13px] font-semibold leading-7 text-black/60">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {post.content}
-              </ReactMarkdown>
-            </div>
-          ) : (
-            <div className="whitespace-pre-wrap text-[13px] font-semibold leading-7 text-black/60">
-              {post.content}
-            </div>
-          )}
-        </section>
-
-        {/* Related */}
-        <aside className="h-fit rounded-3xl bg-white p-6 shadow-[0_10px_30px_rgba(27,73,101,0.10)] ring-1 ring-[color:var(--innovation-sky)]/30 lg:sticky lg:top-20">
-          <div className="text-[13px] font-extrabold text-[color:var(--corporate-blue)]">
-            Bài viết liên quan
-          </div>
-
-          <div className="mt-4 space-y-3">
-            {related.length === 0 ? (
-              <div className="text-[12px] font-semibold text-black/55">
-                Không có bài viết liên quan.
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
+          {/* Content */}
+          <section className="rounded-3xl bg-white p-6 shadow-[0_10px_30px_rgba(27,73,101,0.10)] ring-1 ring-[color:var(--innovation-sky)]/30 md:p-7">
+            {post.contentFormat === "markdown" ? (
+              <div className="space-y-4 text-[13px] font-semibold leading-7 text-black/60">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {post.content}
+                </ReactMarkdown>
               </div>
             ) : (
-              related.map((r) => (
-                <Link
-                  key={r.postId}
-                  to={`/blog/${r.postId}`}
-                  className="block rounded-2xl bg-[color:var(--calm-background)] p-4 ring-1 ring-black/5 hover:bg-black/5"
-                >
-                  <div className="text-[12px] font-extrabold text-[color:var(--corporate-blue)] line-clamp-2">
-                    {r.title}
-                  </div>
-                  <div className="mt-2 text-[11px] font-semibold text-black/50 line-clamp-2">
-                    {r.excerpt}
-                  </div>
-                </Link>
-              ))
+              <div className="whitespace-pre-wrap text-[13px] font-semibold leading-7 text-black/60">
+                {post.content}
+              </div>
             )}
-          </div>
+          </section>
 
-          <Link
-            to="/chuyen-gia"
-            className="mt-5 inline-flex w-full items-center justify-center rounded-2xl bg-[color:var(--trust-blue)] px-4 py-3 text-[12px] font-extrabold text-white hover:brightness-95 active:brightness-90"
-          >
-            Xem danh sách chuyên gia
-          </Link>
-        </aside>
-      </div>
-    </article>
+          {/* Related */}
+          <aside className="h-fit rounded-3xl bg-white p-6 shadow-[0_10px_30px_rgba(27,73,101,0.10)] ring-1 ring-[color:var(--innovation-sky)]/30 lg:sticky lg:top-20">
+            <div className="text-[13px] font-extrabold text-[color:var(--corporate-blue)]">
+              Bài viết liên quan
+            </div>
+
+            <div className="mt-4 space-y-3">
+              {related.length === 0 ? (
+                <div className="text-[12px] font-semibold text-black/55">
+                  Không có bài viết liên quan.
+                </div>
+              ) : (
+                related.map((r) => (
+                  <Link
+                    key={r.postId}
+                    to={`/blog/${r.postId}`}
+                    className="block rounded-2xl bg-[color:var(--calm-background)] p-4 ring-1 ring-black/5 hover:bg-black/5"
+                  >
+                    <div className="text-[12px] font-extrabold text-[color:var(--corporate-blue)] line-clamp-2">
+                      {r.title}
+                    </div>
+                    <div className="mt-2 text-[11px] font-semibold text-black/50 line-clamp-2">
+                      {r.excerpt}
+                    </div>
+                  </Link>
+                ))
+              )}
+            </div>
+
+            <Link
+              to="/chuyen-gia"
+              className="mt-5 inline-flex w-full items-center justify-center rounded-2xl bg-[color:var(--trust-blue)] px-4 py-3 text-[12px] font-extrabold text-white hover:brightness-95 active:brightness-90"
+            >
+              Xem danh sách chuyên gia
+            </Link>
+          </aside>
+        </div>
+      </article>
+    </>
   );
 }

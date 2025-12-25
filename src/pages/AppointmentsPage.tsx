@@ -2,6 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { api } from "../services/api";
 import type { MyAppointmentItemDto } from "../types/api";
+import Seo from "../components/Seo";
 
 function isAbortError(e: unknown) {
   return (
@@ -46,61 +47,75 @@ function Card({
   )}`;
 
   return (
-    <article className="rounded-3xl bg-white p-5 shadow-[0_10px_30px_rgba(27,73,101,0.10)] ring-1 ring-[color:var(--innovation-sky)]/30">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="text-[13px] font-extrabold text-[color:var(--corporate-blue)]">
-            {appt.expertName}{" "}
-            <span className="text-black/45 font-semibold">
-              — {appt.expertTitle}
-            </span>
-          </div>
-          <div className="mt-2 text-[12px] font-semibold text-black/55">
-            {time}
+    <>
+      <Seo
+        title={`Lịch hẹn với ${appt.expertName} - MindWell`}
+        description={`Lịch hẹn của bạn với chuyên gia ${
+          appt.expertName
+        } vào lúc ${formatDateTimeVi(appt.startTime)}. Trạng thái: ${
+          appt.status
+        }.`}
+        canonicalPath={`/lich-hen/${appt.apptId}`}
+        ogType="website"
+      />
+      <article className="rounded-3xl bg-white p-5 shadow-[0_10px_30px_rgba(27,73,101,0.10)] ring-1 ring-[color:var(--innovation-sky)]/30">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="text-[13px] font-extrabold text-[color:var(--corporate-blue)]">
+              {appt.expertName}{" "}
+              <span className="text-black/45 font-semibold">
+                — {appt.expertTitle}
+              </span>
+            </div>
+            <div className="mt-2 text-[12px] font-semibold text-black/55">
+              {time}
+            </div>
+
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Badge>apptId: {appt.apptId}</Badge>
+              <Badge>status: {appt.status}</Badge>
+              {appt.serviceType ? (
+                <Badge>service: {appt.serviceType}</Badge>
+              ) : null}
+              {appt.platformName ? (
+                <Badge>platform: {appt.platformName}</Badge>
+              ) : null}
+              {typeof appt.totalAmountPoints === "number" ? (
+                <Badge>{appt.totalAmountPoints} points</Badge>
+              ) : null}
+              {appt.paymentId ? (
+                <Badge>paymentId: {appt.paymentId}</Badge>
+              ) : null}
+              {appt.paymentStatus ? (
+                <Badge>payment: {appt.paymentStatus}</Badge>
+              ) : null}
+            </div>
           </div>
 
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Badge>apptId: {appt.apptId}</Badge>
-            <Badge>status: {appt.status}</Badge>
-            {appt.serviceType ? (
-              <Badge>service: {appt.serviceType}</Badge>
+          <div className="flex flex-col gap-2">
+            {isDraft ? (
+              <Link
+                to={`/thanh-toan?apptId=${appt.apptId}`}
+                className="inline-flex items-center justify-center rounded-2xl bg-[color:var(--trust-blue)] px-4 py-2 text-[12px] font-extrabold text-white hover:brightness-95 active:brightness-90"
+              >
+                Tiếp tục thanh toán
+              </Link>
             ) : null}
-            {appt.platformName ? (
-              <Badge>platform: {appt.platformName}</Badge>
-            ) : null}
-            {typeof appt.totalAmountPoints === "number" ? (
-              <Badge>{appt.totalAmountPoints} points</Badge>
-            ) : null}
-            {appt.paymentId ? <Badge>paymentId: {appt.paymentId}</Badge> : null}
-            {appt.paymentStatus ? (
-              <Badge>payment: {appt.paymentStatus}</Badge>
+
+            {appt.meetingJoinUrl ? (
+              <a
+                href={appt.meetingJoinUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center justify-center rounded-2xl bg-white px-4 py-2 text-[12px] font-extrabold text-[color:var(--corporate-blue)] ring-1 ring-black/10 hover:bg-black/5"
+              >
+                Join meeting
+              </a>
             ) : null}
           </div>
         </div>
-
-        <div className="flex flex-col gap-2">
-          {isDraft ? (
-            <Link
-              to={`/thanh-toan?apptId=${appt.apptId}`}
-              className="inline-flex items-center justify-center rounded-2xl bg-[color:var(--trust-blue)] px-4 py-2 text-[12px] font-extrabold text-white hover:brightness-95 active:brightness-90"
-            >
-              Tiếp tục thanh toán
-            </Link>
-          ) : null}
-
-          {appt.meetingJoinUrl ? (
-            <a
-              href={appt.meetingJoinUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center justify-center rounded-2xl bg-white px-4 py-2 text-[12px] font-extrabold text-[color:var(--corporate-blue)] ring-1 ring-black/10 hover:bg-black/5"
-            >
-              Join meeting
-            </a>
-          ) : null}
-        </div>
-      </div>
-    </article>
+      </article>
+    </>
   );
 }
 
