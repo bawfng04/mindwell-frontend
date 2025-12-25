@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { geminiGenerateSections } from "../services/gemini";
-import type { AiStructuredResponse } from "../types/ai";
+import { geminiGenerateText } from "../services/gemini";
 
 type ChatMsg =
   | { role: "user"; text: string; at: number }
-  | { role: "ai"; data: AiStructuredResponse; at: number }
+  | { role: "ai_text"; text: string; at: number }
   | { role: "ai_error"; text: string; at: number };
 
 function isAbortError(e: unknown) {
@@ -31,7 +30,6 @@ export default function FloatingAiWidget() {
 
   useEffect(() => {
     if (!open) return;
-    // scroll to bottom when opened
     queueMicrotask(() => {
       listRef.current?.scrollTo({
         top: listRef.current.scrollHeight,
@@ -41,7 +39,6 @@ export default function FloatingAiWidget() {
   }, [open]);
 
   useEffect(() => {
-    // scroll when new message arrives
     queueMicrotask(() => {
       listRef.current?.scrollTo({
         top: listRef.current.scrollHeight,
@@ -63,26 +60,26 @@ export default function FloatingAiWidget() {
 
     setLoading(true);
     try {
-      const data = await geminiGenerateSections({
+      const text = await geminiGenerateText({
         userMessage: q,
         locale: "vi",
         context: {
           page: "floating-widget",
-          userGoal: "Trả lời theo từng section để dễ đọc",
+          userGoal: "Trả lời theo 4 mục rõ ràng, dễ đọc",
         },
         signal: ac.signal,
       });
 
-      setMsgs((prev) => [...prev, { role: "ai", data, at: now() }]);
+      setMsgs((prev) => [...prev, { role: "ai_text", text, at: now() }]);
     } catch (e) {
       if (isAbortError(e)) return;
+
+      const detail = e instanceof Error ? e.message : String(e);
+      console.error("[Gemini] request failed:", e);
+
       setMsgs((prev) => [
         ...prev,
-        {
-          role: "ai_error",
-          text: "Không gọi được AI. Kiểm tra API key hoặc mạng.",
-          at: now(),
-        },
+        { role: "ai_error", text: `Không gọi được AI: ${detail}`, at: now() },
       ]);
     } finally {
       setLoading(false);
@@ -121,10 +118,11 @@ export default function FloatingAiWidget() {
               <div className="text-[13px] font-extrabold leading-tight">
                 MindWell AI
               </div>
-              {/* <div className="text-[11px] font-semibold text-white/80">
-                Trả lời theo sections (JSON)
-              </div> */}
+              <div className="text-[11px] font-semibold text-white/80">
+                Trả lời theo 4 mục: Tóm tắt • Phân tích • Bước thực hiện • Lưu ý
+              </div>
             </div>
+
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -170,60 +168,18 @@ export default function FloatingAiWidget() {
               if (m.role === "ai_error") {
                 return (
                   <div key={idx} className="flex justify-start">
-                    <div className="max-w-[90%] rounded-2xl bg-red-50 px-3 py-2 text-[12px] font-semibold text-red-700 ring-1 ring-red-200">
+                    <div className="max-w-[92%] rounded-2xl bg-red-50 px-3 py-2 text-[12px] font-semibold text-red-700 ring-1 ring-red-200">
                       {m.text}
                     </div>
                   </div>
                 );
               }
 
-              // ai message
-              const r = m.data;
+              // AI text message
               return (
                 <div key={idx} className="flex justify-start">
-                  <div className="max-w-[92%] rounded-2xl bg-white px-3 py-2 text-[12px] text-black/70 ring-1 ring-black/10">
-                    <div className="text-[12px] font-extrabold text-[color:var(--corporate-blue)]">
-                      {r.summary}
-                    </div>
-
-                    {r.safetyNotes?.length ? (
-                      <div className="mt-2 rounded-xl bg-amber-50 p-2 text-[11px] font-semibold text-amber-900/80 ring-1 ring-amber-200">
-                        <div className="font-extrabold text-amber-900">
-                          Lưu ý
-                        </div>
-                        <ul className="mt-1 list-disc pl-5">
-                          {r.safetyNotes.map((t, i) => (
-                            <li key={i}>{t}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    ) : null}
-
-                    <div className="mt-2 space-y-2">
-                      {r.sections.map((s) => (
-                        <div key={s.key} className="rounded-xl bg-black/5 p-2">
-                          <div className="text-[12px] font-extrabold text-[color:var(--corporate-blue)]">
-                            {s.title}
-                          </div>
-                          <div className="mt-1 text-[12px] font-semibold leading-6 text-black/65">
-                            {s.content}
-                          </div>
-                          {s.bullets?.length ? (
-                            <ul className="mt-1 list-disc pl-5 text-[12px] font-semibold text-black/60">
-                              {s.bullets.map((b, i) => (
-                                <li key={i}>{b}</li>
-                              ))}
-                            </ul>
-                          ) : null}
-                        </div>
-                      ))}
-                    </div>
-
-                    {r.followUps?.length ? (
-                      <div className="mt-2 text-[11px] font-semibold text-black/50">
-                        Gợi ý: {r.followUps.slice(0, 2).join(" • ")}
-                      </div>
-                    ) : null}
+                  <div className="max-w-[92%] whitespace-pre-wrap rounded-2xl bg-white px-3 py-2 text-[12px] font-semibold leading-6 text-black/70 ring-1 ring-black/10">
+                    {m.text}
                   </div>
                 </div>
               );

@@ -1,4 +1,3 @@
-// mindwell-frontend/src/services/gemini.ts
 import type { AiStructuredResponse } from "../types/ai";
 
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY as string | undefined;
@@ -13,12 +12,10 @@ type GeminiGenerateContentResponse = {
 };
 
 function assertConfigured() {
-  if (!API_KEY) {
-    throw new Error("Missing VITE_GEMINI_API_KEY");
-  }
+  if (!API_KEY) throw new Error("Missing VITE_GEMINI_API_KEY");
 }
 
-function buildPrompt(input: {
+function buildTextPrompt(input: {
   userMessage: string;
   locale?: "vi" | "en";
   context?: { page?: string; userGoal?: string };
@@ -34,37 +31,70 @@ function buildPrompt(input: {
     `Ngữ cảnh trang: ${page}`,
     ``,
     `YÊU CẦU ĐỊNH DẠNG (BẮT BUỘC):`,
-    `- Chỉ xuất ra DUY NHẤT một JSON object hợp lệ.`,
-    `- Không thêm markdown, không thêm text ngoài JSON.`,
-    `- Tất cả field phải đúng kiểu, không được null (trừ các field optional).`,
-    ``,
-    `JSON schema (mô tả):`,
-    `{
-      "answerId": "string (uuid-like)",
-      "locale": "${locale}",
-      "summary": "string (1-2 câu)",
-      "sections": [
-        {
-          "key": "string (snake_case, unique)",
-          "title": "string",
-          "content": "string (đoạn chính, ngắn gọn)",
-          "bullets": ["string", "..."] (optional),
-          "actions": [{"label":"string","url":"string(optional)"}] (optional)
-        }
-      ],
-      "followUps": ["string", "string", "string"],
-      "safetyNotes": ["string", "..."] (optional)
-    }`,
-    ``,
-    `QUY TẮC NỘI DUNG:`,
     `- Trả lời bằng ${locale === "vi" ? "tiếng Việt" : "English"}.`,
-    `- Chia sections theo logic: (1) Tóm tắt, (2) Phân tích, (3) Bước thực hiện, (4) Lưu ý.`,
-    `- Nếu người dùng hỏi về sức khỏe tinh thần, thêm safetyNotes khuyên tìm chuyên gia khi cần.`,
-    `- Nếu thiếu thông tin, hỏi ngược lại trong followUps.`,
+    `- Chia đúng 4 mục theo đúng tiêu đề sau (viết y nguyên):`,
+    `  1) TÓM TẮT`,
+    `  2) PHÂN TÍCH`,
+    `  3) BƯỚC THỰC HIỆN`,
+    `  4) LƯU Ý`,
+    `- Mỗi mục 3-7 dòng, ngắn gọn, dễ đọc.`,
+    `- Không dùng JSON.`,
     ``,
     `Câu hỏi người dùng:`,
     input.userMessage.trim(),
   ].join("\n");
+}
+
+function pickText(data: GeminiGenerateContentResponse) {
+  return data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+}
+
+export async function geminiGenerateText(input: {
+  userMessage: string;
+  locale?: "vi" | "en";
+  context?: { page?: string; userGoal?: string };
+  signal?: AbortSignal;
+}): Promise<string> {
+  assertConfigured();
+
+  const prompt = buildTextPrompt(input);
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
+    MODEL
+  )}:generateContent?key=${encodeURIComponent(API_KEY!)}`;
+
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: "POST",
+      signal: input.signal,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.4,
+        },
+      }),
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    throw new Error(
+      `Network/CORS error: ${msg}. Kiểm tra mạng hoặc API key restrictions.`
+    );
+  }
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`Gemini error: ${res.status} ${text}`);
+  }
+
+  const data = (await res.json()) as GeminiGenerateContentResponse;
+  const text = pickText(data).trim();
+
+  if (!text) {
+    return "TÓM TẮT\nKhông nhận được nội dung từ AI.\n\nPHÂN TÍCH\n—\n\nBƯỚC THỰC HIỆN\n—\n\nLƯU Ý\n—";
+  }
+
+  return text;
 }
 
 export async function geminiGenerateSections(input: {
@@ -73,44 +103,13 @@ export async function geminiGenerateSections(input: {
   context?: { page?: string; userGoal?: string };
   signal?: AbortSignal;
 }): Promise<AiStructuredResponse> {
-  assertConfigured();
+  const text = await geminiGenerateText(input);
 
-  const prompt = buildPrompt(input);
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
-    MODEL
-  )}:generateContent?key=${encodeURIComponent(API_KEY!)}`;
-
-  const res = await fetch(url, {
-    method: "POST",
-    signal: input.signal,
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      generationConfig: {
-        temperature: 0.4,
-        maxOutputTokens: 1200,
-        responseMimeType: "application/json",
-      },
-    }),
-  });
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`Gemini error: ${res.status} ${text}`);
-  }
-
-  const data = (await res.json()) as GeminiGenerateContentResponse;
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
-
-  try {
-    return JSON.parse(text) as AiStructuredResponse;
-  } catch {
-    return {
-      answerId: "fallback",
-      locale: input.locale ?? "vi",
-      summary: "Không parse được JSON từ model. Trả về nội dung thô.",
-      sections: [{ key: "raw", title: "Nội dung", content: text || "—" }],
-      followUps: ["Bạn muốn mình trả lời theo hướng nào (ngắn gọn/chi tiết)?"],
-    };
-  }
+  return {
+    answerId: crypto?.randomUUID?.() ?? "text-only",
+    locale: input.locale ?? "vi",
+    summary: "Trả lời dạng text theo 4 mục.",
+    sections: [{ key: "text", title: "Nội dung", content: text }],
+    followUps: [],
+  };
 }
